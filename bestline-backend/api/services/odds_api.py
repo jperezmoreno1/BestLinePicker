@@ -15,30 +15,32 @@ def _api_key() -> str:
 def get_odds_list(
         sport_key: str,
         regions: str = "us",
-        markets: str = "h2h, spreads, totals",
+        markets: str = "h2h,spreads,totals",
         odds_format: str = "american",
         date_format: str = "iso",
         bookmakers: str | None = None,
 ):
     params = {
-        "api_key": _api_key(),
+        "apiKey": _api_key(),
         "regions": regions,
         "markets": markets,
-        "odds_format": odds_format,
-        "date_format": date_format
+        "oddsFormat": odds_format,
+        "dateFormat": date_format,
     }
 
     if bookmakers:
         params["bookmakers"] = bookmakers
 
-        r = requests.get(
-                f"{BASE_URL}/sports/{sport_key}/odds",
-                params = params,
-                timeout=20
-            )
-        if r.status_code != 200:
-            raise OddsApiError(f"Odds API error ({r.status_code}): {r.text}")
-        return r.json()
+    r = requests.get(
+        f"{BASE_URL}/sports/{sport_key}/odds",
+        params=params,
+        timeout=20,
+    )
+
+    if r.status_code != 200:
+        raise OddsApiError(f"Odds API error ({r.status_code}): {r.text}")
+
+    return r.json()
     
 def get_event_odds(
         sport_key: str,
@@ -50,11 +52,11 @@ def get_event_odds(
         bookmakers: str | None = None,
 ):
     params = {
-        "api_key": _api_key(),
+        "apiKey": _api_key(),
         "regions": regions,
         "markets": markets,
-        "odds_format": odds_format,
-        "date_format": date_format,
+        "oddsFormat": odds_format,
+        "dateFormat": date_format,
     }
 
     if bookmakers:
