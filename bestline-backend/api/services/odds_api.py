@@ -12,6 +12,17 @@ def _api_key() -> str:
         raise OddsApiError("ODDS_API_KEY MISSING IN .env FILE")
     return key
 
+def _make_request(url: str, params: dict):
+    try:
+        response = requests.get(url, params=params, timeout=20)
+    except requests.RequestException as exc:
+        raise OddsApiError(f"Network error while calling Odds API: {exc}")
+    
+    if response.status_code != 200:
+        raise OddsApiError(f"Odds API error ({response.status_code}): {response}")
+    
+    return response.json()
+
 def get_odds_list(
         sport_key: str,
         regions: str = "us",
@@ -31,16 +42,8 @@ def get_odds_list(
     if bookmakers:
         params["bookmakers"] = bookmakers
 
-    r = requests.get(
-        f"{BASE_URL}/sports/{sport_key}/odds",
-        params=params,
-        timeout=20,
-    )
-
-    if r.status_code != 200:
-        raise OddsApiError(f"Odds API error ({r.status_code}): {r.text}")
-
-    return r.json()
+    url = f"{BASE_URL}/sports/{sport_key}/odds"
+    return _make_request(url, params)
     
 def get_event_odds(
         sport_key: str,
@@ -62,12 +65,5 @@ def get_event_odds(
     if bookmakers:
         params["bookmakers"] = bookmakers
 
-    r = requests.get(
-        f"{BASE_URL}/sports/{sport_key}/events/{event_id}/odds",
-        params=params,
-        timeout=20
-    )
-
-    if r.status_code != 200:
-        raise OddsApiError(f"Odds API error ({r.status_code}): {r.text}")
-    return r.json()
+    url = f"{BASE_URL}/sports/{sport_key}/events/{event_id}/odds"
+    return _make_request(url, params)

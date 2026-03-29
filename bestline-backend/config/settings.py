@@ -127,3 +127,22 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Transitioning supported filters and defaults from api/views.py to api/config/settings.py
+
+SUPPORTED_MARKETS = ["h2h", "spread", "totals"]
+SUPPORTED_REGIONS = ["us"]
+SUPPORTED_ODDS_FORMATS = ["american", "decimal"]
+
+DEFAULT_MARKET = "h2h"
+DEFAULT_REGION = "us"
+DEFAULT_ODDS_FORMAT = "american"
+
+SUPPORTED_BOOKMAKERS = [
+    "draftkings",
+    "fanduel",
+    "betmgm",
+    "caesars",
+]
+
+DEFAULT_ODDS_CACHE_TTL = 30
