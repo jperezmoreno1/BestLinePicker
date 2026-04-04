@@ -1,22 +1,26 @@
-def get_market_from_bookmaker(bookmaker: dict, selected_market: str):
-    markets = bookmaker.get("markets", [])
+def get_market_from_book(book: dict, market_key: str) -> dict | None:
+    markets = book.get("markets", [])
     for market_obj in markets:
-        if market_obj.get("key") == selected_market:
+        if market_obj.get("key") == market_key:
             return market_obj
     return None
 
-def filter_bookmakers(event: dict, selected_bookmakers_list: list[str]) -> list[dict]:
-    all_bookmakers = event.get("bookmakers", [])
 
-    if not selected_bookmakers_list:
-        return all_bookmakers
-    
-    filtered = []
-    for bookmaker in all_bookmakers:
-        if bookmaker.get("key") in selected_bookmakers_list:
-            filtered.append(bookmaker)
+def find_best_lines_for_event(event: dict, market_key: str) -> dict:
+    books = event.get("bookmakers", [])
+    home_team = event.get("home_team")
+    away_team = event.get("away_team")
 
-    return filtered
+    if market_key == "h2h":
+        return find_best_h2h_lines(books, home_team, away_team)
+
+    if market_key == "spreads":
+        return find_best_spread_lines(books, home_team, away_team)
+
+    if market_key == "totals":
+        return find_best_total_lines(books)
+
+    return {}
 
 def find_best_h2h_lines(bookmakers: list[dict], home_team: str, away_team: str) -> dict:
     best_prices = {
@@ -30,7 +34,7 @@ def find_best_h2h_lines(bookmakers: list[dict], home_team: str, away_team: str) 
     }
 
     for bookmaker in bookmakers:
-        market_obj = get_market_from_bookmaker(bookmaker, "h2h")
+        market_obj = get_market_from_book(bookmaker, "h2h")
         if not market_obj:
             continue
 
@@ -47,8 +51,9 @@ def find_best_h2h_lines(bookmakers: list[dict], home_team: str, away_team: str) 
                 best_books[team_name] = bookmaker.get("key")
 
     return {
+        "marketKey": "h2h",
         "best_prices": best_prices,
-        "best_books": best_books
+        "best_books": best_books,
     }
 
 def _is_better_spread(candidate_point, candidate_price, current_entry) -> bool:
@@ -80,7 +85,7 @@ def find_best_spread_lines(bookmakers: list[dict], home_team: str, away_team: st
     }
 
     for bookmaker in bookmakers:
-        market_obj = get_market_from_bookmaker(bookmaker, "spreads")
+        market_obj = get_market_from_book(bookmaker, "spreads")
         if not market_obj:
             continue
         
@@ -101,7 +106,10 @@ def find_best_spread_lines(bookmakers: list[dict], home_team: str, away_team: st
             if _is_better_spread(point, price, best_spreads[team_name]):
                 best_spreads[team_name] = candidate
 
-    return best_spreads
+    return {
+        "marketKey": "spreads",
+        "bestBySelection": best_spreads,
+    }
 
 def _is_better_total(side: str, candidate_point, candidate_price, current_entry) -> bool:
     if current_entry is None:
@@ -137,7 +145,7 @@ def find_best_total_lines(bookmakers: list[dict]) -> dict:
     best_under = None
 
     for bookmaker in bookmakers:
-        market_obj = get_market_from_bookmaker(bookmaker, "totals")
+        market_obj = get_market_from_book(bookmaker, "totals")
         if not market_obj:
             continue
 
@@ -161,6 +169,7 @@ def find_best_total_lines(bookmakers: list[dict]) -> dict:
                     best_under = candidate
         
     return {
+        "marketKey": "totals",
         "over": best_over,
         "under": best_under,
     }

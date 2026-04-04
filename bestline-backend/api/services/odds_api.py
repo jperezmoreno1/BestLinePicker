@@ -7,7 +7,7 @@ class OddsApiError(Exception):
     pass
 
 def _api_key() -> str:
-    key = os.getenv("ODDS_API_KEY", "")
+    key = os.getenv("ODDS_API_KEY", "").strip()
     if not key:
         raise OddsApiError("ODDS_API_KEY MISSING IN .env FILE")
     return key
@@ -16,10 +16,10 @@ def _make_request(url: str, params: dict):
     try:
         response = requests.get(url, params=params, timeout=20)
     except requests.RequestException as exc:
-        raise OddsApiError(f"Network error while calling Odds API: {exc}")
+        raise OddsApiError(f"Network error while calling Odds API: {exc}") from exc
     
     if response.status_code != 200:
-        raise OddsApiError(f"Odds API error ({response.status_code}): {response}")
+        raise OddsApiError(f"Odds API error ({response.status_code}): {response.text}")
     
     return response.json()
 

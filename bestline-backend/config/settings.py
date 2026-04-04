@@ -130,19 +130,30 @@ STATIC_URL = 'static/'
 
 # Transitioning supported filters and defaults from api/views.py to api/config/settings.py
 
-SUPPORTED_MARKETS = ["h2h", "spread", "totals"]
-SUPPORTED_REGIONS = ["us"]
-SUPPORTED_ODDS_FORMATS = ["american", "decimal"]
+SUPPORTED_SPORTS = {
+    "nfl": "americanfootball_nfl",
+    "nba": "basketball_nba",
+    "mlb": "baseball_mlb"
+}
 
-DEFAULT_MARKET = "h2h"
+SUPPORTED_MARKETS = ["h2h", "spreads", "totals"]
+SUPPORTED_REGIONS = ["us", "us2"]
+SUPPORTED_ODDS_FORMATS = ["american", "decimal"]
+SUPPORTED_DATE_FORMATS = ["iso", "unix"]
+
+DEFAULT_SPORT = "nfl"
+DEFAULT_MARKETS = ["h2h", "spreads", "totals"]
 DEFAULT_REGION = "us"
 DEFAULT_ODDS_FORMAT = "american"
+DEFAULT_DATE_FORMAT = "iso"
 
 SUPPORTED_BOOKMAKERS = [
     "draftkings",
     "fanduel",
     "betmgm",
     "caesars",
+    "espnbet",
+    "ballybet"
 ]
 
 DEFAULT_ODDS_CACHE_TTL = 30
