@@ -18,6 +18,7 @@ type Game = {
 type OddsEnvelope = {
   source: "live" | "cache";
   data: OddsEvent[];
+  filters?: Record<string, unknown>
   error?: string;
 };
 
@@ -64,7 +65,21 @@ type Snapshot = {
   books: Book[];
 };
 
-const BOOKS = ["FanDuel", "DraftKings", "BetMGM", "Caesars", "PointsBet"] as const;
+const BOOKS_OPTIONS= [
+  {label: "FanDuel", value: "fanduel"},
+  {label: "DraftKings", value: "draftkings"},
+  {label: "BetMGM", value: "betmgm"},
+  {label: "Caesars", value: "caesars"},
+  {label: "PointsBet", value: "pointsbetus"},
+] as const;
+
+const REGIONS_OPTIONS = [
+  {label: "United States", value: "us"},
+  {label: "US 2", value: "us2"},
+  {label: "United Kingdom", value: "uk"},
+  {label: "Europe", value: "eu"},
+  {label: "Australia", value: "au"}
+] as const;
 
 function americanToDecimal(odds: number): number {
   if (odds > 0) return 1 + odds / 100;
@@ -112,11 +127,16 @@ function toGame(league: League, ev: OddsEvent): Game {
   };
 }
 
-function buildBooksFromEvent(ev: OddsEvent | null, market: Market): Book[] {
+function buildBooksFromEvent(ev: OddsEvent | null, market: Market, selectedBooks: string[] = []): Book[] {
   if (!ev?.bookmakers || ev.bookmakers.length === 0) return [];
   const marketKey = MARKET_TO_KEY[market];
 
-  return ev.bookmakers.map((bk) => {
+  const visibleBookmakers =
+    selectedBooks.length > 0
+      ? ev.bookmakers.filter( (bk) => selectedBooks.includes(bk.key) )
+      : ev.bookmakers;
+
+  return visibleBookmakers.map((bk) => {
     const mkt = bk.markets?.find((m) => m.key === marketKey);
     const outcomes = (mkt?.outcomes || []).map((o) => {
       // Create stable keys for selection highlighting
@@ -167,6 +187,9 @@ function bestOddsForSelection(books: Book[], selectionKey: string): number | nul
 }
 
 export default function Page() {
+  const [region, setRegion] = useState("us");
+  const [selectedBooks, setSelectedBooks] = useState<string[]>([]);
+
   const [league, setLeague] = useState<League>("NFL");
   const [market, setMarket] = useState<Market>("Moneyline");
 
@@ -214,9 +237,25 @@ export default function Page() {
   const refreshOdds = async () => {
     setLoading(true);
     setError("");
+
     try {
       const sport = LEAGUE_TO_SPORT[league];
-      const res = await fetch(`/api/odds?sport=${sport}&markets=h2h,spreads,totals&regions=us`, { cache: "no-store" });
+      const marketKey = MARKET_TO_KEY[market];
+
+      const params = new URLSearchParams({
+        sport,
+        markets: marketKey,
+        regions: region,
+      });
+
+      if (selectedBooks.length > 0) {
+        params.set("bookmakers", selectedBooks.join(","));
+      }
+
+      const res = await fetch(`/api/odds?${params.toString()}`, { 
+        cache: "no-store"
+       });
+
       const json: OddsEnvelope = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to fetch odds");
 
@@ -233,7 +272,7 @@ export default function Page() {
       setSelectedGameId(nextSelectedId);
 
       const ev = nextSelectedId ? nextEventsById[nextSelectedId] : null;
-      setBooks(buildBooksFromEvent(ev, market));
+      setBooks(buildBooksFromEvent(ev, market, selectedBooks));
 
       setLastUpdated(Date.now());
     } catch (e) {
@@ -248,13 +287,13 @@ export default function Page() {
     // Load fresh events for this league
     refreshOdds();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [league]);
+  }, [league, market, region, selectedBooks]);
 
   // Rebuild books when market or selectedGameId or events change
   useEffect(() => {
-    setBooks(buildBooksFromEvent(selectedEvent, market));
+    setBooks(buildBooksFromEvent(selectedEvent, market, selectedBooks));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [market, selectedGameId, eventsById]);
+  }, [market, selectedGameId, eventsById, selectedBooks]);
 
   // Auto-refresh loop
   useEffect(() => {
@@ -263,7 +302,7 @@ export default function Page() {
     const id = window.setInterval(() => refreshOdds(), ms);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefreshEnabled, refreshSeconds, market, selectedGameId]);
+  }, [autoRefreshEnabled, refreshSeconds, league, market, region, selectedGameId]);
 
   // Snapshot history
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
@@ -293,6 +332,13 @@ export default function Page() {
       books: [...books],
     };
     setSnapshots((prev) => [snap, ...prev].slice(0, 25));
+  };
+
+  const toggleBook = (bookValue: string) => {
+    setSelectedBooks((prev) => 
+      prev.includes(bookValue) 
+      ? prev.filter((b) => b !== bookValue) 
+      : [...prev, bookValue])
   };
 
   // Best odds for the currently selected selection (calculator)
@@ -329,6 +375,45 @@ export default function Page() {
           </button>
         </div>
       </header>
+
+      {/* Region Dropdown */}
+      <div style={styles.controlGroup}>
+        <label style={styles.label}>Region</label>
+        <select
+          value={region}
+          onChange={(e) => setRegion(e.target.value)}
+          style={styles.select}
+          > 
+            {REGIONS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))} 
+          </select>
+      </div>
+
+      {/* MyBooks Filter */}
+      <div style = {styles.booksFilterWrap}>
+        <div style = {styles.booksFilterTitle}>My Books</div>
+        <div style = {styles.booksFilterList}>
+          {
+            BOOKS_OPTIONS.map((book) => {
+                const checked = selectedBooks.includes(book.value);
+
+                return (
+                  <label key = {book.value} style = {styles.bookCheckboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleBook(book.value)}
+                      style={{ width: 16, height: 16 }} 
+                      />
+                      <span>{book.label}</span>                      
+                  </label>
+                );
+              })}
+        </div>
+      </div>
 
       <div style={styles.container}>
         {/* Game selector */}
@@ -869,5 +954,31 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "8px 10px",
     borderRadius: 999,
     fontWeight: 900,
+  },
+  booksFilterWrap: {
+    marginTop: 12,
+    border: "1px solid #e2e8f0",
+    borderRadius: 14,
+    padding: 12,
+    background: "#ffffff"
+  },
+  booksFilterTitle: {
+    fontSize: 12,
+    fontWeight: 900,
+    color: "#475569",
+    marginBottom: 10,
+  },
+  booksFilterList: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "8px 10px",
+    borderRadius: 999,
+    border: "1px solid #e2e8f0",
+    background: "#f8fafc",
+    color: "#0f172a",
+    fontWeight: 800,
+    fontSize: 13,
+    cursor: "pointer",
   },
 };
