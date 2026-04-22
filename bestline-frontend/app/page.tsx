@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 type League = "NFL" | "NBA" | "MLB";
 type Market = "Moneyline" | "Spread" | "Total";
@@ -516,7 +517,9 @@ export default function Page() {
           <button onClick={refreshOdds} style={styles.secondaryButton}>
             Refresh
           </button>
-
+          <Link href="/guides" style={styles.navLinkButton}>
+            Guides
+          </Link>
           <button onClick={saveSnapshot} style={styles.primaryButton}>
             Save Snapshot
           </button>
@@ -1016,6 +1019,18 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#e5e7eb",
     fontWeight: 700,
     cursor: "pointer",
+  },
+  navLinkButton: {
+    padding: "10px 14px",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "rgba(255,255,255,0.06)",
+    color: "#e5e7eb",
+    fontWeight: 700,
+    cursor: "pointer",
+    textDecoration: "none",
+    display: "inline-flex",
+    alignItems: "center",
   },
 
   container: { maxWidth: 1180, margin: "0 auto", padding: "18px 18px 52px" },
