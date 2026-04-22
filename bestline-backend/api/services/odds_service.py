@@ -1,3 +1,4 @@
+
 from config.settings import SUPPORTED_SPORTS
 
 from api.services.best_line_logic import find_best_lines_for_event
@@ -13,6 +14,10 @@ from api.services.odds_cache import (
 from api.services.odds_normalizer import (
     normalize_event_odds_request,
     normalize_odds_list_request,
+)
+from api.services.odds_settings_logic import (
+    build_display_events,
+    sort_display_events,
 )
 
 
@@ -31,9 +36,22 @@ def fetch_odds_list_with_cache(query_params) -> dict:
 
     cached = get_cached_value(cache_key)
     if cached is not None:
+        display_events = build_display_events(
+            raw_events=cached,
+            active_market=normalized["active_market"],
+            books_mode=normalized["books_mode"],
+            event_status=normalized["event_status"],
+        )
+        display_events = sort_display_events(
+            events=display_events,
+            sort_by=normalized["sort_by"],
+            sort_order=normalized["sort_order"],
+        )
+
         return {
             "source": "cache",
             "data": cached,
+            "display_events": display_events,
             "filters": normalized,
         }
 
@@ -48,9 +66,22 @@ def fetch_odds_list_with_cache(query_params) -> dict:
 
     set_cached_value(cache_key, data, LIST_CACHE_TTL)
 
+    display_events = build_display_events(
+        raw_events=data,
+        active_market=normalized["active_market"],
+        books_mode=normalized["books_mode"],
+        event_status=normalized["event_status"],
+    )
+    display_events = sort_display_events(
+        events=display_events,
+        sort_by=normalized["sort_by"],
+        sort_order=normalized["sort_order"],
+    )
+
     return {
         "source": "live",
         "data": data,
+        "display_events": display_events,
         "filters": normalized,
     }
 
@@ -71,9 +102,25 @@ def fetch_event_odds_with_cache(query_params) -> dict:
 
     cached = get_cached_value(cache_key)
     if cached is not None:
+        raw_event = cached
+        raw_events = [raw_event] if raw_event else []
+
+        display_events = build_display_events(
+            raw_events=raw_events,
+            active_market=normalized["active_market"],
+            books_mode=normalized["books_mode"],
+            event_status=normalized["event_status"],
+        )
+        display_events = sort_display_events(
+            events=display_events,
+            sort_by=normalized["sort_by"],
+            sort_order=normalized["sort_order"],
+        )
+
         return {
             "source": "cache",
             "data": cached,
+            "display_events": display_events,
             "filters": normalized,
         }
 
@@ -89,9 +136,24 @@ def fetch_event_odds_with_cache(query_params) -> dict:
 
     set_cached_value(cache_key, data, EVENT_CACHE_TTL)
 
+    raw_events = [data] if data else []
+
+    display_events = build_display_events(
+        raw_events=raw_events,
+        active_market=normalized["active_market"],
+        books_mode=normalized["books_mode"],
+        event_status=normalized["event_status"],
+    )
+    display_events = sort_display_events(
+        events=display_events,
+        sort_by=normalized["sort_by"],
+        sort_order=normalized["sort_order"],
+    )
+
     return {
         "source": "live",
         "data": data,
+        "display_events": display_events,
         "filters": normalized,
     }
 
