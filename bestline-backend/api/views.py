@@ -1,15 +1,23 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
 from datetime import datetime, timezone
 
 from .services.odds_api import OddsApiError
 from .services.firestore import get_db
 from .services.calc import american_to_decimal, implied_probability_from_decimal
+
 from .services.odds_service import (
     build_best_lines_from_event_payload,
     fetch_event_odds_with_cache,
     fetch_odds_list_with_cache,
+)
+
+from .services.snapshot_service import (
+    create_snapshot,
+    get_snapshot_detail,
+    list_snapshots
 )
 
 class OddsView(APIView):
@@ -30,7 +38,7 @@ class OddsView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-class EventOddsView(APIView):
+class EventOddsView(APIView): # Do I still need this?
     def get(self, request):
         try:
             result = fetch_event_odds_with_cache(request.query_params)
@@ -50,56 +58,92 @@ class EventOddsView(APIView):
 
 class SnapshotCreateView(APIView):
     def post(self, request):
-        sport = request.data.get("sport", "")
-        markets = request.data.get("markets", "")
-        payload = request.data.get("payload")
+        try:
+            db = get_db()
+            saved_snapshot = create_snapshot(db, request.data)
 
-        if not sport or not markets or payload is None:
             return Response(
-                {"error": "sport, markets, and payload are required"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {
+                    "ok": True,
+                    "data": saved_snapshot,
+                },
+                status=status.HTTP_201_CREATED,
             )
-
-        db = get_db()
-        doc = {
-            "sport": sport,
-            "markets": markets,
-            "payload": payload,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        ref = db.collection("snapshots").document()
-        ref.set(doc)
-
-        return Response(
-            {"ok": True, "id": ref.id},
-            status=status.HTTP_201_CREATED,
-        )
+        
+        except ValueError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        except RuntimeError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        
+        except Exception as exc:
+            return Response(
+                {"error": f"Failed to save snapshot: {str(exc)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class SnapshotListView(APIView):
     def get(self, request):
-        sport = request.query_params.get("sport", "nfl")
-        db = get_db()
+        try:
+            sport = request.query_params.get("sport")
+            event_id = request.query_params.get("event_id")
+            market_key = request.query_params.get("market_key")
+            limit = request.query_params.get("limit", 20)
 
-        snaps = (
-            db.collection("snapshots")
-              .where("sport", "==", sport)
-              .order_by("created_at", direction="DESCENDING")
-              .limit(20)
-              .stream()
-        )
+            db = get_db()
+            data = list_snapshots(
+                db=db,
+                sport=sport,
+                event_id=event_id,
+                market_key=market_key,
+                limit=limit
+            )
 
-        out = []
-        for s in snaps:
-            d = s.to_dict()
-            out.append({
-                "id": s.id,
-                "sport": d.get("sport"),
-                "markets": d.get("markets"),
-                "created_at": d.get("created_at"),
-            })
+            return Response({"data": data}, status=status.HTTP_200_OK)
+        
+        except RuntimeError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        except Exception as exc:
+            return Response(
+                {"error": f"Failed to load snapshots: {str(exc)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+class SnapshotDetailView(APIView):
+    def get(self, request, snapshot_id):
+        try:
+            db = get_db()
+            data = get_snapshot_detail(db, snapshot_id)
 
-        return Response({"data": out}, status=status.HTTP_200_OK)
+            if data is None:
+                return Response(
+                    {"error": "Snapshot not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            return Response({"data": data}, status=status.HTTP_200_OK)
+        
+        except RuntimeError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        
+        except Exception as exc:
+            return Response(
+                {"error": f"Failed to load snapshot detail: {str(exc)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
     
 class BestPriceView(APIView):
     def post(self, request):
