@@ -97,15 +97,16 @@ type Book = {
 
 type Snapshot = {
   id: string;
-  ts: number;
-  league: League;
-  gameId: string;
-  gameLabel: string;
-  market: Market;
-  selectionKey: string;
-  selectionLabel: string;
-  lineLabel?: string;
-  books: Book[];
+  sport: string;
+  event_id: string;
+  matchup_label: string;
+  market_key: OddsMarketKey;
+  market_label: string;
+  selection_key: string;
+  selection_label: string;
+  best_bookmaker_title: string | null;
+  best_price: number | null;
+  created_at: string;
 };
 
 const BOOKS_OPTIONS = [
@@ -269,6 +270,125 @@ function getInitialSelectionKey(market: Market): string {
   return "OVER";
 }
 
+function getSelectionData(
+  books: Book[],
+  selectionKey: string
+): { label: string; selectionName: string; selectionType: string; point: number | null } | null {
+  for (const book of books) {
+    const out = book.outcomes.find((o) => o.key === selectionKey);
+    if (!out) continue;
+
+    if (selectionKey === "HOME_ML" || selectionKey === "AWAY_ML") {
+      return {
+        label: out.label,
+        selectionName: out.label.replace(" ML", ""),
+        selectionType: "team",
+        point: null,
+      };
+    }
+
+    if (selectionKey === "HOME_SPD" || selectionKey === "AWAY_SPD") {
+      const point = typeof out.line === "number" ? out.line : null;
+      const selectionName =
+        point !== null
+          ? out.label.replace(
+              new RegExp(`\\s*[+-]?${Math.abs(point).toString().replace(".", "\\.")}$`),
+              ""
+            )
+          : out.label;
+
+      return {
+        label: out.label,
+        selectionName: selectionName,
+        selectionType: "team",
+        point,
+      };
+    }
+
+    if (selectionKey === "OVER" || selectionKey === "UNDER") {
+      return {
+        label: out.label,
+        selectionName: out.label.split(" ")[0],
+        selectionType: out.label.split(" ")[0].toLowerCase(),
+        point: typeof out.line === "number" ? out.line : null,
+      };
+    }
+    
+    return {
+      label: out.label,
+      selectionName: out.label,
+      selectionType: "unknown",
+      point: typeof out.line === "number" ? out.line : null,
+    };
+  }
+  return null;
+}
+
+function buildNormalizedOutcomesForSelection(
+  books: Book[],
+  selectionKey: string
+) {
+  return books
+    .map((book) => {
+      const out = book.outcomes.find((o) => o.key === selectionKey);
+      if (!out) return null;
+
+      let selectionType = "team";
+
+      if (selectionKey === "OVER") selectionType = "over";
+      if (selectionKey === "UNDER") selectionType = "under";
+
+      return {
+        bookmaker_key: book.key,
+        bookmaker_title: book.name,
+        outcome_name:
+          selectionKey === "HOME_ML" || selectionKey === "AWAY_ML"
+            ? out.label.replace(" ML", "")
+            : selectionKey === "OVER" || selectionKey === "UNDER"
+              ? out.label.toLowerCase().startsWith("over")
+                ? "Over"
+                : "Under"
+              : out.label,
+        selection_type: selectionType,
+        price: out.oddsAmerican,
+        point: typeof out.line === "number" ? out.line : null,
+        last_update: new Date().toISOString(),
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+}
+
+function getBestLineSummary(
+  books: Book[],
+  selectionKey: string
+): {
+  bookmaker_key: string | null;
+  bookmaker_title: string | null;
+  price: number | null;
+} {
+  let bestBook: { key: string; name: string } | null = null;
+  let bestPrice: number | null = null;
+
+  for (const book of books) {
+    const out = book.outcomes.find((o) => o.key === selectionKey);
+    if (!out) continue;
+
+    if (
+      bestPrice === null ||
+      americanToDecimal(out.oddsAmerican) > americanToDecimal(bestPrice)
+    ) {
+      bestPrice = out.oddsAmerican;
+      bestBook = { key: book.key, name: book.name };
+    }
+  }
+  
+  return {
+    bookmaker_key: bestBook?.key || null,
+    bookmaker_title: bestBook?.name || null,
+    price: bestPrice,
+  };
+}
+
 export default function Page() {
   const [region, setRegion] = useState("us");
   const [selectedBooks, setSelectedBooks] = useState<string[]>([]);
@@ -285,6 +405,11 @@ export default function Page() {
   const [source, setSource] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [snapshotsLoading, setSnapshotsLoading] = useState<boolean>(false);
+  const [snapshotError, setSnapshotError] = useState<string>("");
+  const [savingSnapshot, setSavingSnapshot] = useState<boolean>(false);
 
   const [search, setSearch] = useState("");
   const games = useMemo(() => {
@@ -430,7 +555,6 @@ export default function Page() {
     selectedMatchupKey,
   ]);
 
-  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const selectedGame = useMemo(
     () => games.find((g) => g.matchupKey === selectedMatchupKey) || null,
     [games, selectedMatchupKey]
@@ -449,24 +573,132 @@ export default function Page() {
     return undefined;
   }, [books, market]);
 
-  const saveSnapshot = () => {
-    const sel = selectionOptions.find((s) => s.key === selectedSelectionKey);
+  const saveSnapshot = async () => {
+    if (!selectedDisplayEvent) {
+      setSnapshotError("Select a game before saving a snapshot.");
+      return;
+    }
 
-    const snap: Snapshot = {
-      id: crypto.randomUUID(),
-      ts: Date.now(),
-      league,
-      gameId: selectedMatchupKey,
-      gameLabel,
-      market,
-      selectionKey: selectedSelectionKey,
-      selectionLabel: sel?.label || selectedSelectionKey,
-      lineLabel,
-      books: [...books],
-    };
+    if (books.length === 0) {
+      setSnapshotError("No sportsbook data available to save.");
+      return;
+    }
 
-    setSnapshots((prev) => [snap, ...prev].slice(0, 25));
+    const selectionData = getSelectionData(books, selectedSelectionKey);
+    if (!selectionData) {
+      setSnapshotError("Select a valid line before saving.");
+      return;
+    }
+
+    setSavingSnapshot(true);
+    setSnapshotError("");
+
+    try {
+      const normalizedOutcomes = buildNormalizedOutcomesForSelection(
+        books,
+        selectedSelectionKey
+      );
+      const bestLineSummary = getBestLineSummary(books, selectedSelectionKey);
+      const bestPrice = bestLineSummary.price;
+
+      const payload = {
+        sport: LEAGUE_TO_SPORT[league],
+        sport_key: selectedDisplayEvent.sport_key,
+        sport_title: selectedDisplayEvent.sport_title,
+        event_id: selectedDisplayEvent.id,
+        event_commence_time: selectedDisplayEvent.commence_time,
+        home_team: selectedDisplayEvent.home_team,
+        away_team: selectedDisplayEvent.away_team,
+        market_key: MARKET_TO_KEY[market],
+        selection_name: selectionData.selectionName,
+        selection_type: selectionData.selectionType,
+        point: selectionData.point,
+        best_line_summary: bestLineSummary,
+        calculator_context: {
+          stake,
+          payout: bestPrice !== null ? payoutForStake(bestPrice, stake) : null,
+          profit: bestPrice !== null ? profitForStake(bestPrice, stake) : null,
+          implied_probability:
+            bestPrice !== null ? impliedProb(bestPrice) : null,
+        },
+        filters: {
+          regions: [region],
+          bookmakers: selectedBooks,
+          odds_format: "american",
+          books_mode: booksMode,
+          event_status: eventStatus,
+          sort_by: sortBy,
+          sort_order: sortOrder,
+        },
+        normalized_outcomes: normalizedOutcomes,
+        source: "the_odds_api",
+      };
+
+      const res = await fetch("/api/snapshots", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error || "Failed to save snapshot");
+      }
+
+      if (json.data) {
+        setSnapshots((prev) => [json.data, ...prev].slice(0, 25));
+      }
+    } catch (e) {
+      setSnapshotError(
+        e instanceof Error ? e.message : "Failed to save snapshot"
+      );
+    } finally {
+      setSavingSnapshot(false);
+    }
   };
+  const loadSnapshots = async () => {
+    if (!selectedDisplayEvent?.id) {
+      setSnapshots([]);
+      return;
+    }
+
+    setSnapshotsLoading(true);
+    setSnapshotError("");
+
+    try {
+      const params = new URLSearchParams({
+        event_id: selectedDisplayEvent.id,
+        market_key: MARKET_TO_KEY[market],
+        limit: "10",
+      });
+
+      const res = await fetch(`/api/snapshots?${params.toString()}`, {
+        cache: "no-store",
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error || "Failed to load snapshots");
+      }
+
+      setSnapshots(json.data || []);
+    } catch (e) {
+      setSnapshotError(
+        e instanceof Error ? e.message : "Failed to load snapshots"
+      );
+      setSnapshots([]);
+    } finally {
+      setSnapshotsLoading(false);
+    }
+  };
+  useEffect(() => {
+    loadSnapshots();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDisplayEvent?.id, market]);
 
   const toggleBook = (bookValue: string) => {
     setSelectedBooks((prev) =>
@@ -520,8 +752,12 @@ export default function Page() {
           <Link href="/guides" style={styles.navLinkButton}>
             Guides
           </Link>
-          <button onClick={saveSnapshot} style={styles.primaryButton}>
-            Save Snapshot
+          <button
+            onClick={saveSnapshot}
+            style={styles.primaryButton}
+            disabled={savingSnapshot}
+          >
+            {savingSnapshot ? "Saving..." : "Save Snapshot"}
           </button>
         </div>
       </header>
@@ -900,35 +1136,38 @@ export default function Page() {
             </div>
           </div>
 
-          {snapshots.length === 0 ? (
+          {snapshotError && (
+            <div style={styles.errorBox}>
+              Error: {snapshotError}
+            </div>
+          )}
+
+          {snapshotsLoading ? (
+            <div style={styles.loadingBox}>Loading snapshots...</div>
+          ) : snapshots.length === 0 ? (
             <div style={styles.emptyState}>
               No snapshots yet. Let auto refresh run for a bit, then click <strong>Save Snapshot</strong>.
             </div>
           ) : (
             <div style={styles.snapshotList}>
-              {snapshots.map((s) => {
-                const best = bestOddsForSelection(s.books, s.selectionKey);
-
-                return (
-                  <div key={s.id} style={styles.snapshotItem}>
-                    <div style={styles.snapshotLeft}>
-                      <div style={styles.snapshotTitle}>
-                        {s.league} • {s.gameLabel}
-                      </div>
-                      <div style={styles.snapshotSub}>
-                        {s.market} • {s.selectionLabel}
-                        {s.lineLabel ? ` • ${s.lineLabel}` : ""} • Saved {formatTime(s.ts)}
-                      </div>
-                    </div>
-
-                    <div style={styles.snapshotRight}>
-                      <span style={styles.snapshotBest}>
-                        Best at save: {best !== null ? formatOdds(best) : "N/A"}
-                      </span>
+              {snapshots.map((s) => (
+                <div key={s.id} style={styles.snapshotItem}>
+                  <div style={styles.snapshotLeft}>
+                    <div style={styles.snapshotTitle}>{s.matchup_label}</div>
+                    <div style={styles.snapshotSub}>
+                      {s.market_label} • {s.selection_label} • Saved{" "}
+                      {formatTime(Date.parse(s.created_at))}
                     </div>
                   </div>
-                );
-              })}
+
+                  <div style={styles.snapshotRight}>
+                    <span style={styles.snapshotBest}>
+                      Best at save: {s.best_price !== null ? formatOdds(s.best_price) : "N/A"}
+                      {s.best_bookmaker_title ? ` • ${s.best_bookmaker_title}` : ""}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </section>
