@@ -478,6 +478,8 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
             league={league}
             market={market}
             gameLabel={gameLabel}
+            gameId={selectedDisplayEvent?.id || null}
+            stake={stake}
             books={books}
             selectionOptions={selectionOptions}
             onMarketChange={setMarket}

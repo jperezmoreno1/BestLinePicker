@@ -27,7 +27,7 @@ export default function AppHeader({
   return (
     <header className={theme.header}>
       <div className={theme.headerInner}>
-        <div className={theme.brandWrap}>
+        <Link href="/" className={theme.navBrandLink}>
           <div className={theme.logoDot} />
 
           <div>
@@ -36,9 +36,9 @@ export default function AppHeader({
               Compare Odds Across Books
             </div>
           </div>
-        </div>
+        </Link>
 
-        <nav className="flex flex-wrap items-center gap-2">
+        <nav className="flex flex-wrap items-center gap-2 md:-ml-70">
           {LEAGUE_LINKS.map((link) => {
             const active = link.label === activeLeague;
 
@@ -66,6 +66,10 @@ export default function AppHeader({
           >
             Refresh
           </button>
+
+          <Link href="/tracking" className={theme.navLink}>
+            Tracking
+          </Link>
 
           <Link href="/guides" className={theme.navLink}>
             Guides

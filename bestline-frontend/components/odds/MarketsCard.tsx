@@ -1,11 +1,14 @@
 import { theme } from "@/styles/theme";
 import type { Book, League, Market } from "@/types/odds";
 import { bestOddsForSelection, formatOdds } from "@/utils/odds";
+import TrackLineButton from "@/components/tracking/TrackLineButton";
 
 type MarketsCardProps = {
   league: League;
   market: Market;
   gameLabel: string;
+  gameId?: string | null;
+  stake: number;
   books: Book[];
   selectionOptions: Array<{
     key: string;
@@ -18,6 +21,8 @@ export default function MarketsCard({
   league,
   market,
   gameLabel,
+  gameId,
+  stake,
   books,
   selectionOptions,
   onMarketChange,
@@ -92,16 +97,32 @@ export default function MarketsCard({
                       }`}
                     >
                       {outcome ? (
-                        <div className="inline-flex items-center justify-end gap-2">
-                          <span
-                            className={isBest ? theme.oddsBest : theme.odds}
-                          >
-                            {formatOdds(outcome.oddsAmerican)}
-                          </span>
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="inline-flex items-center justify-end gap-2">
+                            <span
+                              className={isBest ? theme.oddsBest : theme.odds}
+                            >
+                              {formatOdds(outcome.oddsAmerican)}
+                            </span>
 
-                          {isBest && (
-                            <span className={theme.bestPill}>Best</span>
-                          )}
+                            {isBest && (
+                              <span className={theme.bestPill}>Best</span>
+                            )}
+                          </div>
+
+                          <TrackLineButton
+                            line={{
+                              game_id: gameId || null,
+                              matchup: gameLabel,
+                              league,
+                              market,
+                              selection: selection.label,
+                              sportsbook: book.name,
+                              odds: outcome.oddsAmerican,
+                              stake,
+                              status: "watching",
+                            }}
+                          />
                         </div>
                       ) : (
                         <span className={theme.mutedDash}>—</span>

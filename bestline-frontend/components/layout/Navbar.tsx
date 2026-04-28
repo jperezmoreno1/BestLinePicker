@@ -1,32 +1,45 @@
+"use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { theme } from "@/styles/theme";
 
 export default function Navbar() {
+  const router = useRouter();
   return (
-    <header className="w-full border-b border-stone-200 bg-white/80 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-        <Link href="/" className="text-xl font-bold text-stone-950">
-          BestLinePicker
-        </Link>
+    <header className={theme.header}>
+      <div className={theme.headerInner}>
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="relative z-50 flex cursor-pointer items-center gap-3 border-0 bg-transparent p-0 text-left no-underline transition hover:opacity-85"
+          aria-label="Go to BestLinePicker home page"
+        >
+          <span className={theme.logoDot} />
 
-        <nav className="flex items-center gap-2 text-sm font-medium text-stone-600">
-          <Link
-            href="/"
-            className="rounded-lg px-3 py-2 transition hover:bg-stone-100 hover:text-stone-950"
-          >
-            Odds
+          <div>
+            <div className={theme.brandTitle}>BestLinePicker</div>
+            <div className={theme.brandSubtitle}>Find the best line faster</div>
+          </div>
+        </button>
+
+        <nav className={theme.navLinks}>
+          <Link href="/nfl" className={theme.navLink}>
+            NFL
           </Link>
 
-          <Link
-            href="/history"
-            className="rounded-lg px-3 py-2 transition hover:bg-stone-100 hover:text-stone-950"
-          >
-            History
+          <Link href="/nba" className={theme.navLink}>
+            NBA
           </Link>
 
-          <Link
-            href="/guides"
-            className="rounded-lg px-3 py-2 transition hover:bg-stone-100 hover:text-stone-950"
-          >
+          <Link href="/mlb" className={theme.navLink}>
+            MLB
+          </Link>
+
+          <Link href="/tracking" className={theme.navLink}>
+            Tracking
+          </Link>
+
+          <Link href="/guides" className={theme.navLink}>
             Guides
           </Link>
         </nav>

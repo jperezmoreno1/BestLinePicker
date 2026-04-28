@@ -6,7 +6,7 @@ export const theme = {
     "sticky top-0 z-50 border-b border-white/10 bg-[#0b1020]/90 backdrop-blur-md",
 
   headerInner:
-    "mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between",
+  "mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-5",
 
   brandWrap:
     "flex items-center gap-3",
@@ -64,6 +64,12 @@ export const theme = {
 
   navLink:
     "inline-flex items-center rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-slate-100 no-underline transition hover:bg-white/15",
+
+  navBrandLink:
+    "flex items-center gap-3 no-underline transition hover:opacity-85",
+
+  navLinks:
+    "flex flex-wrap items-center gap-2",
 
   metaPill:
     "rounded-full border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs text-indigo-800",
@@ -193,4 +199,55 @@ export const theme = {
 
   snapshotBest:
     "rounded-full border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-800",
+
+  trackingHero:
+    "mb-6 flex flex-col justify-between gap-4 rounded-[22px] border border-white/10 bg-white/5 p-5 shadow-[0_16px_40px_rgba(0,0,0,0.2)] md:flex-row md:items-end",
+
+  trackingEyebrow:
+    "text-xs font-black uppercase tracking-[0.2em] text-blue-300",
+
+  trackingTitle:
+    "mt-2 text-3xl font-black tracking-tight text-slate-100 md:text-4xl",
+
+  trackingDescription:
+    "mt-2 max-w-2xl text-sm leading-6 text-slate-300",
+
+  trackingCard:
+    "rounded-[18px] border border-white/20 bg-gradient-to-b from-white/95 to-white/90 p-4 text-slate-900 shadow-[0_16px_40px_rgba(0,0,0,0.25)]",
+
+  trackingCardHeader:
+    "flex flex-col justify-between gap-3 md:flex-row md:items-start",
+
+  trackingMeta:
+    "text-xs font-black uppercase tracking-wide text-slate-500",
+
+  trackingMatchup:
+    "mt-1 text-xl font-black text-slate-900",
+
+  trackingSub:
+    "mt-1 text-sm font-bold text-slate-600",
+
+  trackingStatus:
+    "w-fit rounded-full border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-800",
+
+  trackingStatGrid:
+    "mt-4 grid gap-3 md:grid-cols-4",
+
+  trackingStatBox:
+    "rounded-2xl border border-slate-200 bg-slate-50 p-3",
+
+  trackingStatLabel:
+    "text-xs font-black uppercase text-slate-500",
+
+  trackingStatValue:
+    "mt-1 text-lg font-black text-slate-900",
+
+  trackingFooter:
+    "mt-5 flex flex-col gap-4 border-t border-slate-200 pt-4 md:flex-row md:items-end md:justify-between",
+
+  trackingRemoveButton:
+    "rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-black text-red-700 transition hover:bg-red-100",
+
+  trackingBackButton:
+    "inline-flex w-fit items-center rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-slate-100 no-underline transition hover:bg-white/15",
 };
