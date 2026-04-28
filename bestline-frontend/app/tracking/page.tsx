@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import TrackingList from "@/components/tracking/TrackingList";
 import type { TrackedLine } from "@/types/tracking";
@@ -10,11 +10,119 @@ import {
   updateTrackedLineStake,
 } from "@/lib/trackingApi";
 import { theme } from "@/styles/theme";
+import {
+  compareTrackedLineToCurrentOffer,
+  findCurrentOfferForTrackedLine,
+  getTrackedMarketKeyForFetch,
+  type LineComparisonResult,
+  type OddsEvent,
+} from "@/lib/tracking/lineMovement";
+
+type TrackedLineWithComparison = TrackedLine & {
+  comparison?: LineComparisonResult;
+};
+
+const SUPPORTED_LEAGUES = new Set(["nfl", "nba", "mlb"]);
+
+function normalizeLeague(league: string) {
+  return league.trim().toLowerCase();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getOddsEventsFromResponse(json: unknown): OddsEvent[] {
+  if (Array.isArray(json)) {
+    return json as OddsEvent[];
+  }
+
+  if (!isRecord(json)) {
+    return [];
+  }
+
+  if (Array.isArray(json.display_events)) {
+    return json.display_events as OddsEvent[];
+  }
+
+  if (Array.isArray(json.events)) {
+    return json.events as OddsEvent[];
+  }
+
+  if (Array.isArray(json.data)) {
+    return json.data as OddsEvent[];
+  }
+
+  return [];
+}
 
 export default function TrackingPage() {
   const [trackedLines, setTrackedLines] = useState<TrackedLine[]>([]);
+  const [currentEvents, setCurrentEvents] = useState<OddsEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [oddsLoading, setOddsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const loadCurrentOddsForTrackedLines = async (lines: TrackedLine[]) => {
+    if (lines.length === 0) {
+      setCurrentEvents([]);
+      return;
+    }
+
+    setOddsLoading(true);
+
+    try {
+      const fetchKeys = new Set<string>();
+
+      for (const line of lines) {
+        const league = normalizeLeague(line.league || "");
+        const market = getTrackedMarketKeyForFetch(line);
+
+        if (SUPPORTED_LEAGUES.has(league) && market) {
+          fetchKeys.add(`${league}:${market}`);
+        }
+      }
+
+      const responses = await Promise.all(
+        Array.from(fetchKeys).map(async (key) => {
+          const [sport, market] = key.split(":");
+
+          const params = new URLSearchParams({
+            sport,
+            market,
+            regions: "us",
+          });
+
+          const res = await fetch(`/api/odds?${params.toString()}`, {
+            cache: "no-store",
+          });
+
+          const json: unknown = await res.json();
+
+          if (!res.ok) {
+            const message = isRecord(json)
+              ? String(json.error || json.detail || "Failed to fetch odds")
+              : "Failed to fetch odds";
+
+            throw new Error(message);
+          }
+
+          return getOddsEventsFromResponse(json);
+        })
+      );
+
+      setCurrentEvents(responses.flat());
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? `Failed to load current odds: ${error.message}`
+          : "Failed to load current odds"
+      );
+      setCurrentEvents([]);
+    } finally {
+      setOddsLoading(false);
+    }
+  };
 
   const loadTrackedLines = async () => {
     setLoading(true);
@@ -23,6 +131,7 @@ export default function TrackingPage() {
     try {
       const data = await getTrackedLines();
       setTrackedLines(data);
+      await loadCurrentOddsForTrackedLines(data);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Failed to load tracked lines"
@@ -31,6 +140,18 @@ export default function TrackingPage() {
       setLoading(false);
     }
   };
+
+  const trackedLinesWithComparison = useMemo<TrackedLineWithComparison[]>(() => {
+    return trackedLines.map((item) => {
+      const currentOffer = findCurrentOfferForTrackedLine(item, currentEvents);
+      const comparison = compareTrackedLineToCurrentOffer(item, currentOffer);
+
+      return {
+        ...item,
+        comparison,
+      };
+    });
+  }, [trackedLines, currentEvents]);
 
   const handleDelete = async (id: string) => {
     setError("");
@@ -76,14 +197,24 @@ export default function TrackingPage() {
 
             <p className={theme.trackingDescription}>
               Save lines from the odds table and quickly review stake, payout,
-              profit, and implied probability. Version 1 stays intentionally
-              simple.
+              profit, implied probability, and current line movement.
             </p>
           </div>
 
-          <Link href="/" className={theme.trackingBackButton}>
-            Back to Odds
-          </Link>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => loadCurrentOddsForTrackedLines(trackedLines)}
+              disabled={oddsLoading || trackedLines.length === 0}
+              className="rounded-2xl border border-stone-200 bg-white px-4 py-2 text-sm font-black text-stone-900 shadow-sm transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {oddsLoading ? "Checking..." : "Check Movement"}
+            </button>
+
+            <Link href="/" className={theme.trackingBackButton}>
+              Back to Odds
+            </Link>
+          </div>
         </div>
 
         {error && <div className={theme.errorBox}>{error}</div>}
@@ -92,7 +223,7 @@ export default function TrackingPage() {
           <div className={theme.loadingBox}>Loading tracked lines...</div>
         ) : (
           <TrackingList
-            trackedLines={trackedLines}
+            trackedLines={trackedLinesWithComparison}
             onDelete={handleDelete}
             onUpdateStake={handleUpdateStake}
           />

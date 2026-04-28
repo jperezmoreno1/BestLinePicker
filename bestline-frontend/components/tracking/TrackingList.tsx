@@ -1,10 +1,15 @@
 "use client";
 
 import type { TrackedLine } from "@/types/tracking";
+import type { LineComparisonResult } from "@/lib/tracking/lineMovement";
 import TrackingCard from "@/components/tracking/TrackingCard";
 
+type TrackedLineWithComparison = TrackedLine & {
+  comparison?: LineComparisonResult;
+};
+
 type TrackingListProps = {
-  trackedLines: TrackedLine[];
+  trackedLines: TrackedLineWithComparison[];
   onDelete: (id: string) => Promise<void>;
   onUpdateStake: (id: string, stake: number) => Promise<void>;
 };

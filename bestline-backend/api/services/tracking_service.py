@@ -86,23 +86,38 @@ def create_tracked_line(db, payload):
     stake = float(payload.get("stake", 10))
 
     doc_data = {
-        "game_id": payload.get("game_id"),
-        "matchup": payload.get("matchup"),
-        "league": payload.get("league"),
-        "market": payload.get("market"),
-        "selection": payload.get("selection"),
-        "sportsbook": payload.get("sportsbook"),
-        "odds": odds,
-        "stake": stake,
-        "implied_probability": calculate_implied_probability(odds),
-        "payout": calculate_payout(odds, stake),
-        "profit": calculate_profit(odds, stake),
-        "status": payload.get("status", "watching"),
-        "created_at": timestamp_iso,
-        "created_at_unix_ms": timestamp_ms,
-        "updated_at": timestamp_iso,
-        "updated_at_unix_ms": timestamp_ms,
-    }
+    "game_id": payload.get("game_id"),
+    "event_id": payload.get("event_id") or payload.get("game_id"),
+
+    "matchup": payload.get("matchup"),
+    "league": payload.get("league"),
+
+    "market": payload.get("market"),
+    "market_key": payload.get("market_key"),
+
+    "selection": payload.get("selection"),
+    "selection_name": payload.get("selection_name") or payload.get("selection"),
+
+    "sportsbook": payload.get("sportsbook"),
+    "sportsbook_key": payload.get("sportsbook_key"),
+    "sportsbook_title": payload.get("sportsbook_title") or payload.get("sportsbook"),
+
+    "odds": odds,
+    "tracked_price": payload.get("tracked_price") or odds,
+
+    "point": payload.get("point"),
+    "tracked_point": payload.get("tracked_point") or payload.get("point"),
+
+    "stake": stake,
+    "implied_probability": calculate_implied_probability(odds),
+    "payout": calculate_payout(odds, stake),
+    "profit": calculate_profit(odds, stake),
+    "status": payload.get("status", "watching"),
+    "created_at": timestamp_iso,
+    "created_at_unix_ms": timestamp_ms,
+    "updated_at": timestamp_iso,
+    "updated_at_unix_ms": timestamp_ms,
+}
 
     doc_ref = db.collection(TRACKED_LINES_COLLECTION).document()
     doc_ref.set(doc_data)
