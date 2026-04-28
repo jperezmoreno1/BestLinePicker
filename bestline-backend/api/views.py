@@ -14,6 +14,13 @@ from .services.odds_service import (
     fetch_odds_list_with_cache,
 )
 
+from .services.tracking_service import (
+    create_tracked_line,
+    list_tracked_lines,
+    delete_tracked_line,
+    update_tracked_line_stake,
+)
+
 from .services.snapshot_service import (
     create_snapshot,
     get_snapshot_detail,
@@ -214,3 +221,140 @@ class BestPriceView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+    
+class TrackedLineListCreateView(APIView):
+    def get(self, request):
+        try:
+            limit = request.query_params.get("limit", 50)
+
+            db = get_db()
+            data = list_tracked_lines(db=db, limit=limit)
+
+            return Response(
+                {
+                    "ok": True,
+                    "data": data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except RuntimeError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        except Exception as exc:
+            return Response(
+                {"error": f"Failed to load tracked lines: {str(exc)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def post(self, request):
+        try:
+            db = get_db()
+            saved_line = create_tracked_line(db, request.data)
+
+            return Response(
+                {
+                    "ok": True,
+                    "data": saved_line,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        except ValueError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except RuntimeError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        except Exception as exc:
+            return Response(
+                {"error": f"Failed to save tracked line: {str(exc)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class TrackedLineDetailView(APIView):
+    def delete(self, request, tracking_id):
+        try:
+            db = get_db()
+            deleted = delete_tracked_line(db, tracking_id)
+
+            if not deleted:
+                return Response(
+                    {"error": "Tracked line not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            return Response(
+                {
+                    "ok": True,
+                    "message": "Tracked line deleted",
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except RuntimeError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        except Exception as exc:
+            return Response(
+                {"error": f"Failed to delete tracked line: {str(exc)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class TrackedLineStakeUpdateView(APIView):
+    def patch(self, request, tracking_id):
+        try:
+            stake = request.data.get("stake")
+
+            db = get_db()
+            updated_line = update_tracked_line_stake(
+                db=db,
+                tracking_id=tracking_id,
+                stake=stake,
+            )
+
+            if updated_line is None:
+                return Response(
+                    {"error": "Tracked line not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            return Response(
+                {
+                    "ok": True,
+                    "data": updated_line,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValueError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except RuntimeError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        except Exception as exc:
+            return Response(
+                {"error": f"Failed to update tracked line stake: {str(exc)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
