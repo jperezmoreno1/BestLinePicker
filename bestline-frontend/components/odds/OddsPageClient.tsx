@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import LeagueGamesBoard from "@/components/odds/LeagueGamesBoard";
 import AppHeader from "@/components/layout/AppHeader";
 import FiltersCard from "@/components/odds/FiltersCard";
-import GamesCard from "@/components/odds/GamesCard";
 import MarketsCard from "@/components/odds/MarketsCard";
 import CalculatorCard from "@/components/odds/CalculatorCard";
 import SnapshotHistoryCard from "@/components/snapshots/SnapshotHistoryCard";
@@ -37,11 +37,15 @@ import {
   toGame,
 } from "@/utils/odds";
 
-export default function OddsPageClient() {
+type OddsPageClientProps = {
+  initialLeague: League;
+};
+
+export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
   const [region, setRegion] = useState("us");
   const [selectedBooks, setSelectedBooks] = useState<string[]>([]);
 
-  const [league, setLeague] = useState<League>("NFL");
+  const [league] = useState<League>(initialLeague);
   const [market, setMarket] = useState<Market>("Moneyline");
 
   const [booksMode, setBooksMode] = useState<BooksMode>("all");
@@ -68,7 +72,6 @@ export default function OddsPageClient() {
   const [refreshSeconds, setRefreshSeconds] = useState<number>(30);
 
   const [stake, setStake] = useState<number>(100);
-
   const [selectedSelectionKey, setSelectedSelectionKey] = useState<string>(
     getInitialSelectionKey("Moneyline")
   );
@@ -76,8 +79,8 @@ export default function OddsPageClient() {
   const games = useMemo(() => {
     const byMatchup = new Map<string, Game>();
 
-    for (const ev of displayEvents) {
-      const game = toGame(league, ev);
+    for (const event of displayEvents) {
+      const game = toGame(league, event);
 
       if (!byMatchup.has(game.matchupKey)) {
         byMatchup.set(game.matchupKey, game);
@@ -88,17 +91,18 @@ export default function OddsPageClient() {
   }, [displayEvents, league]);
 
   const filteredGames = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const query = search.trim().toLowerCase();
 
     return games.filter((game) =>
-      q ? `${game.away} ${game.home}`.toLowerCase().includes(q) : true
+      query ? `${game.away} ${game.home}`.toLowerCase().includes(query) : true
     );
   }, [games, search]);
 
   const selectedDisplayEvent = useMemo(() => {
     return (
-      displayEvents.find((ev) => getMatchupKey(ev) === selectedMatchupKey) ||
-      null
+      displayEvents.find(
+        (event) => getMatchupKey(event) === selectedMatchupKey
+      ) || null
     );
   }, [displayEvents, selectedMatchupKey]);
 
@@ -111,10 +115,10 @@ export default function OddsPageClient() {
     : "No game selected";
 
   const selectionOptions = useMemo(() => {
-    const first = books[0];
+    const firstBook = books[0];
 
-    return first
-      ? first.outcomes.map((outcome) => ({
+    return firstBook
+      ? firstBook.outcomes.map((outcome) => ({
           key: outcome.key,
           label: outcome.label,
         }))
@@ -124,14 +128,6 @@ export default function OddsPageClient() {
   const bestForSelected = useMemo(() => {
     return bestOddsForSelection(books, selectedSelectionKey);
   }, [books, selectedSelectionKey]);
-
-  const selectedEventMeta = selectedDisplayEvent
-    ? {
-        status: selectedDisplayEvent.event_status,
-        valueScore: selectedDisplayEvent.value_score,
-        booksCount: selectedDisplayEvent.bookmakers_count,
-      }
-    : null;
 
   const refreshOdds = async () => {
     setLoading(true);
@@ -173,7 +169,7 @@ export default function OddsPageClient() {
       const nextSelectedMatchupKey =
         selectedMatchupKey &&
         nextDisplayEvents.some(
-          (ev) => getMatchupKey(ev) === selectedMatchupKey
+          (event) => getMatchupKey(event) === selectedMatchupKey
         )
           ? selectedMatchupKey
           : nextDisplayEvents[0]
@@ -182,8 +178,8 @@ export default function OddsPageClient() {
 
       setSelectedMatchupKey(nextSelectedMatchupKey);
       setLastUpdated(Date.now());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Something went wrong");
       setDisplayEvents([]);
     } finally {
       setLoading(false);
@@ -270,9 +266,9 @@ export default function OddsPageClient() {
       if (json.data) {
         setSnapshots((prev) => [json.data, ...prev].slice(0, 25));
       }
-    } catch (e) {
+    } catch (error) {
       setSnapshotError(
-        e instanceof Error ? e.message : "Failed to save snapshot"
+        error instanceof Error ? error.message : "Failed to save snapshot"
       );
     } finally {
       setSavingSnapshot(false);
@@ -306,9 +302,9 @@ export default function OddsPageClient() {
       }
 
       setSnapshots(json.data || []);
-    } catch (e) {
+    } catch (error) {
       setSnapshotError(
-        e instanceof Error ? e.message : "Failed to load snapshots"
+        error instanceof Error ? error.message : "Failed to load snapshots"
       );
       setSnapshots([]);
     } finally {
@@ -388,9 +384,8 @@ export default function OddsPageClient() {
   return (
     <main className={theme.page}>
       <AppHeader
-        league={league}
+        activeLeague={league}
         savingSnapshot={savingSnapshot}
-        onLeagueChange={setLeague}
         onRefresh={refreshOdds}
         onSaveSnapshot={saveSnapshot}
       />
@@ -411,22 +406,71 @@ export default function OddsPageClient() {
           onToggleBook={toggleBook}
         />
 
-        <GamesCard
+        <section className={theme.card}>
+          <div className={theme.cardHeader}>
+            <div>
+              <div className={theme.cardTitle}>Search Games</div>
+              <div className={theme.cardSubtitle}>
+                Filter {league} games by team name, then select a game card
+                below.
+              </div>
+            </div>
+
+            <span className={theme.metaPill}>
+              Last updated <strong>{new Date(lastUpdated).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}</strong>{" "}
+              • <strong>{source || "-"}</strong>
+            </span>
+          </div>
+
+          {error && <div className={theme.errorBox}>Error: {error}</div>}
+          {loading && <div className={theme.loadingBox}>Loading live odds...</div>}
+
+          <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div>
+              <label className={theme.labelDark}>Search</label>
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={`Search ${league} teams...`}
+                className={theme.inputLight}
+              />
+            </div>
+
+            <div className={theme.autoBox}>
+              <label className="flex items-center gap-2 text-sm font-black text-slate-900">
+                <input
+                  type="checkbox"
+                  checked={autoRefreshEnabled}
+                  onChange={(event) => setAutoRefreshEnabled(event.target.checked)}
+                  className="h-4 w-4"
+                />
+                Auto refresh
+              </label>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-slate-600">Every</span>
+                <input
+                  type="number"
+                  min={5}
+                  step={5}
+                  value={refreshSeconds}
+                  onChange={(event) => setRefreshSeconds(Number(event.target.value))}
+                  className="w-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none"
+                />
+                <span className="text-xs font-black text-slate-600">sec</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <LeagueGamesBoard
           league={league}
-          source={source}
-          error={error}
-          loading={loading}
-          search={search}
+          games={filteredGames}
           selectedMatchupKey={selectedMatchupKey}
-          filteredGames={filteredGames}
-          lastUpdated={lastUpdated}
-          autoRefreshEnabled={autoRefreshEnabled}
-          refreshSeconds={refreshSeconds}
-          selectedEventMeta={selectedEventMeta}
-          onSearchChange={setSearch}
-          onSelectedMatchupChange={setSelectedMatchupKey}
-          onAutoRefreshChange={setAutoRefreshEnabled}
-          onRefreshSecondsChange={setRefreshSeconds}
+          onSelectGame={setSelectedMatchupKey}
         />
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[1.3fr_1fr]">

@@ -3,17 +3,24 @@ import { theme } from "@/styles/theme";
 import type { League } from "@/types/odds";
 
 type AppHeaderProps = {
-  league: League;
+  activeLeague: League;
   savingSnapshot: boolean;
-  onLeagueChange: (league: League) => void;
   onRefresh: () => void;
   onSaveSnapshot: () => void;
 };
 
+const LEAGUE_LINKS: Array<{
+  label: League;
+  href: string;
+}> = [
+  { label: "NFL", href: "/nfl" },
+  { label: "NBA", href: "/nba" },
+  { label: "MLB", href: "/mlb" },
+];
+
 export default function AppHeader({
-  league,
+  activeLeague,
   savingSnapshot,
-  onLeagueChange,
   onRefresh,
   onSaveSnapshot,
 }: AppHeaderProps) {
@@ -31,20 +38,27 @@ export default function AppHeader({
           </div>
         </div>
 
-        <div className={theme.headerActions}>
-          <div>
-            <label className={theme.labelLight}>League</label>
-            <select
-              value={league}
-              onChange={(event) => onLeagueChange(event.target.value as League)}
-              className={theme.selectDark}
-            >
-              <option value="NFL">NFL</option>
-              <option value="NBA">NBA</option>
-              <option value="MLB">MLB</option>
-            </select>
-          </div>
+        <nav className="flex flex-wrap items-center gap-2">
+          {LEAGUE_LINKS.map((link) => {
+            const active = link.label === activeLeague;
 
+            return (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={`${theme.navLink} ${
+                  active
+                    ? "border-indigo-300 bg-indigo-500/30 text-white"
+                    : ""
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className={theme.headerActions}>
           <button
             type="button"
             onClick={onRefresh}
