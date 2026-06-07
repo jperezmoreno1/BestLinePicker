@@ -382,89 +382,43 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
   }, [selectedDisplayEvent?.id, market]);
 
   return (
-    <main className={theme.page}>
-      <AppHeader
-        activeLeague={league}
-        savingSnapshot={savingSnapshot}
-        onRefresh={refreshOdds}
-        onSaveSnapshot={saveSnapshot}
-      />
+  <main className={theme.page}>
+    <AppHeader
+      activeLeague={league}
+      savingSnapshot={savingSnapshot}
+      onRefresh={refreshOdds}
+      onSaveSnapshot={saveSnapshot}
+    />
 
-      <div className={theme.container}>
-        <FiltersCard
-          region={region}
-          selectedBooks={selectedBooks}
-          booksMode={booksMode}
-          eventStatus={eventStatus}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          onRegionChange={setRegion}
-          onBooksModeChange={setBooksMode}
-          onEventStatusChange={setEventStatus}
-          onSortByChange={setSortBy}
-          onSortOrderChange={setSortOrder}
-          onToggleBook={toggleBook}
-        />
+    <div className={theme.container}>
+      <section className="mb-5 rounded-3xl border border-border bg-card p-6 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-primary">
+          Live Odds Board
+        </p>
 
-        <section className={theme.card}>
-          <div className={theme.cardHeader}>
-            <div>
-              <div className={theme.cardTitle}>Search Games</div>
-              <div className={theme.cardSubtitle}>
-                Filter {league} games by team name, then select a game card
-                below.
-              </div>
-            </div>
+        <div className="mt-3 flex flex-col justify-between gap-3 md:flex-row md:items-end">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
+              {league} Odds Comparison
+            </h1>
 
-            <span className={theme.metaPill}>
-              Last updated <strong>{new Date(lastUpdated).toLocaleTimeString([], {
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Compare live moneyline, spread, and total prices across books.
+              Filter by region, preferred books, event status, and sort order.
+            </p>
+          </div>
+
+          <span className={theme.metaPill}>
+            Last updated{" "}
+            <strong>
+              {new Date(lastUpdated).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
-              })}</strong>{" "}
-              • <strong>{source || "-"}</strong>
-            </span>
-          </div>
-
-          {error && <div className={theme.errorBox}>Error: {error}</div>}
-          {loading && <div className={theme.loadingBox}>Loading live odds...</div>}
-
-          <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
-            <div>
-              <label className={theme.labelDark}>Search</label>
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={`Search ${league} teams...`}
-                className={theme.inputLight}
-              />
-            </div>
-
-            <div className={theme.autoBox}>
-              <label className="flex items-center gap-2 text-sm font-black text-slate-900">
-                <input
-                  type="checkbox"
-                  checked={autoRefreshEnabled}
-                  onChange={(event) => setAutoRefreshEnabled(event.target.checked)}
-                  className="h-4 w-4"
-                />
-                Auto refresh
-              </label>
-
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-slate-600">Every</span>
-                <input
-                  type="number"
-                  min={5}
-                  step={5}
-                  value={refreshSeconds}
-                  onChange={(event) => setRefreshSeconds(Number(event.target.value))}
-                  className="w-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none"
-                />
-                <span className="text-xs font-black text-slate-600">sec</span>
-              </div>
-            </div>
-          </div>
-        </section>
+              })}
+            </strong>
+          </span>
+        </div>
+      </section>
 
         <LeagueGamesBoard
           league={league}

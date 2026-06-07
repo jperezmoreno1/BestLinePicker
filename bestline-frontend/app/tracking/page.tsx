@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+
 import Link from "next/link";
+import { ArrowLeft, Heart } from "lucide-react";
+import PageShell from "@/components/layout/PageShell";
+
 import TrackingList from "@/components/tracking/TrackingList";
 import type { TrackedLine } from "@/types/tracking";
 import {
@@ -187,48 +191,51 @@ export default function TrackingPage() {
   }, []);
 
   return (
-    <main className={theme.page}>
-      <div className={theme.container}>
-        <div className={theme.trackingHero}>
-          <div>
-            <p className={theme.trackingEyebrow}>BestLinePicker</p>
-
-            <h1 className={theme.trackingTitle}>Tracked Lines</h1>
-
-            <p className={theme.trackingDescription}>
-              Save lines from the odds table and quickly review stake, payout,
-              profit, implied probability, and current line movement.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={() => loadCurrentOddsForTrackedLines(trackedLines)}
-              disabled={oddsLoading || trackedLines.length === 0}
-              className="rounded-2xl border border-stone-200 bg-white px-4 py-2 text-sm font-black text-stone-900 shadow-sm transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {oddsLoading ? "Checking..." : "Check Movement"}
-            </button>
-
-            <Link href="/" className={theme.trackingBackButton}>
-              Back to Odds
-            </Link>
-          </div>
+  <PageShell>
+    <div className={theme.trackingHero}>
+      <div>
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Heart className="h-5 w-5" />
         </div>
 
-        {error && <div className={theme.errorBox}>{error}</div>}
+        <p className={theme.trackingEyebrow}>BestLinePicker</p>
 
-        {loading ? (
-          <div className={theme.loadingBox}>Loading tracked lines...</div>
-        ) : (
-          <TrackingList
-            trackedLines={trackedLinesWithComparison}
-            onDelete={handleDelete}
-            onUpdateStake={handleUpdateStake}
-          />
-        )}
+        <h1 className={theme.trackingTitle}>Tracked Lines</h1>
+
+        <p className={theme.trackingDescription}>
+          Save lines from the odds table and quickly review stake, payout,
+          profit, implied probability, and current line movement.
+        </p>
       </div>
-    </main>
-  );
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={() => loadCurrentOddsForTrackedLines(trackedLines)}
+          disabled={oddsLoading || trackedLines.length === 0}
+          className={theme.buttonPrimary}
+        >
+          {oddsLoading ? "Checking..." : "Check Movement"}
+        </button>
+
+        <Link href="/" className={theme.trackingBackButton}>
+          <ArrowLeft className="h-4 w-4" />
+          Back to Odds
+        </Link>
+      </div>
+    </div>
+
+    {error && <div className={theme.errorBox}>{error}</div>}
+
+    {loading ? (
+      <div className={theme.loadingBox}>Loading tracked lines...</div>
+    ) : (
+      <TrackingList
+        trackedLines={trackedLinesWithComparison}
+        onDelete={handleDelete}
+        onUpdateStake={handleUpdateStake}
+      />
+    )}
+  </PageShell>
+);
 }

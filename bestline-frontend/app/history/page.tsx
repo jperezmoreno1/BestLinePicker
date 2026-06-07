@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { theme } from "@/styles/theme";
+import { ArrowLeft, Clock } from "lucide-react";
+import PageShell from "@/components/layout/PageShell";
 import SnapshotHistoryCard from "@/components/snapshots/SnapshotHistoryCard";
 import type { Snapshot } from "@/types/odds";
 
@@ -41,40 +42,44 @@ export default function HistoryPage() {
   }, []);
 
   return (
-    <main className={theme.page}>
-      <header className={theme.header}>
-        <div className={theme.headerInner}>
-          <div className={theme.brandWrap}>
-            <div className={theme.logoDot} />
-
-            <div>
-              <div className={theme.brandTitle}>Snapshot History</div>
-              <div className={theme.brandSubtitle}>
-                Review saved BestLinePicker odds snapshots
-              </div>
+    <PageShell>
+      <section className="mb-5 rounded-3xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Clock className="h-5 w-5" />
             </div>
+
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.22em] text-primary">
+              Snapshot History
+            </p>
+
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground md:text-4xl">
+              Saved Odds Snapshots
+            </h1>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Review saved BestLinePicker odds snapshots, including the market,
+              selection, calculator context, and best line at the time saved.
+            </p>
           </div>
 
-          <div className={theme.headerActions}>
-            <Link href="/" className={theme.navLink}>
-              Back to Odds
-            </Link>
-
-            <Link href="/guides" className={theme.navLink}>
-              Guides
-            </Link>
-          </div>
+          <Link
+            href="/"
+            className="inline-flex w-fit items-center gap-2 rounded-xl border border-border bg-muted px-4 py-2 text-sm font-black text-foreground transition hover:bg-secondary/40"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Odds
+          </Link>
         </div>
-      </header>
+      </section>
 
-      <div className={theme.container}>
-        <SnapshotHistoryCard
-          snapshots={snapshots}
-          snapshotsLoading={snapshotsLoading}
-          snapshotError={snapshotError}
-          mode="full"
-        />
-      </div>
-    </main>
+      <SnapshotHistoryCard
+        snapshots={snapshots}
+        snapshotsLoading={snapshotsLoading}
+        snapshotError={snapshotError}
+        mode="full"
+      />
+    </PageShell>
   );
 }
