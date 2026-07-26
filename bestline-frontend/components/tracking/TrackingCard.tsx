@@ -3,6 +3,7 @@
 import type { TrackedLine } from "@/types/tracking";
 import StakeEditor from "@/components/tracking/StakeEditor";
 import LineMovementBadge from "@/components/tracking/lineMovementBadge";
+import { theme } from "@/styles/theme";
 import {
   getTrackedPointForDisplay,
   getTrackedPriceForDisplay,
@@ -68,18 +69,16 @@ export default function TrackingCard({
   const comparison = item.comparison;
 
   return (
-    <article className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <article className={theme.trackingCard}>
+      <div className={theme.trackingCardHeader}>
         <div>
-          <div className="text-xs font-black uppercase tracking-wide text-stone-500">
+          <div className={theme.trackingMeta}>
             {item.league} • {item.market}
           </div>
 
-          <h2 className="mt-1 text-xl font-black text-stone-950">
-            {item.matchup}
-          </h2>
+          <h2 className={theme.trackingMatchup}>{item.matchup}</h2>
 
-          <p className="mt-1 text-sm font-semibold text-stone-600">
+          <p className={theme.trackingSub}>
             {item.selection} · {item.sportsbook}
           </p>
         </div>
@@ -87,27 +86,23 @@ export default function TrackingCard({
         {comparison ? (
           <LineMovementBadge status={comparison.status} />
         ) : (
-          <span className="w-fit rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-black text-stone-700">
+          <span className="w-fit rounded-full border border-border bg-muted px-3 py-1 text-xs font-black text-muted-foreground">
             Watching
           </span>
         )}
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-4">
-        <div className="rounded-2xl bg-stone-50 p-4">
-          <p className="text-xs font-black uppercase text-stone-500">
-            Tracked Line
-          </p>
-          <p className="mt-1 text-lg font-black text-stone-950">
+      <div className={theme.trackingStatGrid}>
+        <div className={theme.trackingStatBox}>
+          <p className={theme.trackingStatLabel}>Tracked Line</p>
+          <p className={theme.trackingStatValue}>
             {formatLine(item.selection, trackedPoint, trackedPrice)}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-stone-50 p-4">
-          <p className="text-xs font-black uppercase text-stone-500">
-            Current Line
-          </p>
-          <p className="mt-1 text-lg font-black text-stone-950">
+        <div className={theme.trackingStatBox}>
+          <p className={theme.trackingStatLabel}>Current Line</p>
+          <p className={theme.trackingStatValue}>
             {comparison?.status === "unavailable"
               ? "Unavailable"
               : formatLine(
@@ -118,34 +113,32 @@ export default function TrackingCard({
           </p>
         </div>
 
-        <div className="rounded-2xl bg-stone-50 p-4">
-          <p className="text-xs font-black uppercase text-stone-500">
-            Implied Prob.
-          </p>
-          <p className="mt-1 text-lg font-black text-stone-950">
+        <div className={theme.trackingStatBox}>
+          <p className={theme.trackingStatLabel}>Implied Prob.</p>
+          <p className={theme.trackingStatValue}>
             {item.implied_probability}%
           </p>
         </div>
 
-        <div className="rounded-2xl bg-stone-50 p-4">
-          <p className="text-xs font-black uppercase text-stone-500">Profit</p>
-          <p className="mt-1 text-lg font-black text-stone-950">
+        <div className={theme.trackingStatBox}>
+          <p className={theme.trackingStatLabel}>Profit</p>
+          <p className={theme.trackingStatValue}>
             ${item.profit.toFixed(2)}
           </p>
         </div>
       </div>
 
       {comparison && (
-        <div className="mt-4 rounded-2xl border border-stone-100 bg-stone-50 px-4 py-3">
-          <p className="text-sm font-semibold text-stone-700">
+        <div className="mt-4 rounded-2xl border border-border bg-muted/40 px-4 py-3">
+          <p className="text-sm font-bold text-foreground">
             {comparison.message}
           </p>
         </div>
       )}
 
-      <div className="mt-5 flex flex-col gap-4 border-t border-stone-100 pt-5 md:flex-row md:items-end md:justify-between">
+      <div className={theme.trackingFooter}>
         <div>
-          <p className="mb-2 text-xs font-black uppercase text-stone-500">
+          <p className="mb-2 text-xs font-black uppercase text-muted-foreground">
             Stake
           </p>
 
@@ -156,18 +149,18 @@ export default function TrackingCard({
         </div>
 
         <div className="flex flex-col items-start gap-2 md:items-end">
-          <p className="text-xs font-semibold text-stone-500">
+          <p className="text-xs font-bold text-muted-foreground">
             Payout: ${item.payout.toFixed(2)}
           </p>
 
-          <p className="text-xs font-semibold text-stone-500">
+          <p className="text-xs font-bold text-muted-foreground">
             Saved {savedDate}
           </p>
 
           <button
             type="button"
             onClick={() => onDelete(item.id)}
-            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-black text-red-700 transition hover:bg-red-100"
+            className={theme.trackingRemoveButton}
           >
             Remove
           </button>

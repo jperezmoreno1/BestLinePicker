@@ -37,12 +37,12 @@ export default function TrackLineButton({ line }: TrackLineButtonProps) {
         type="button"
         onClick={handleTrack}
         disabled={saving || tracked}
-        className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-full border border-best-line bg-best-line/10 px-3 py-1 text-xs font-black text-[#6b7652] transition hover:bg-best-line/20 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {tracked ? "Tracked" : saving ? "Saving..." : "Track"}
       </button>
 
-      {error && <span className="max-w-32 text-right text-[11px] text-red-600">{error}</span>}
+      {error && <span className="max-w-32 text-right text-[11px] text-destructive">{error}</span>}
     </div>
   );
 }

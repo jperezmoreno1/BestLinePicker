@@ -1,5 +1,5 @@
+import GuideSection from "@/components/guides/GuideSection";
 import { guideFaqs } from "@/data/guidesContent";
-import GuideSection from "./GuideSection";
 
 export default function FAQSection() {
   return (
@@ -7,38 +7,19 @@ export default function FAQSection() {
       title="Frequently Asked Questions"
       description="Quick answers to common beginner questions."
     >
-      <div style={styles.list}>
+      <div className="flex flex-col gap-3">
         {guideFaqs.map((faq) => (
-          <div key={faq.id} style={styles.item}>
-            <div style={styles.question}>{faq.question}</div>
-            <div style={styles.answer}>{faq.answer}</div>
+          <div
+            key={faq.id}
+            className="rounded-2xl border border-border bg-muted/40 p-4"
+          >
+            <h3 className="font-black text-foreground">{faq.question}</h3>
+            <p className="mt-2 text-sm leading-7 text-muted-foreground">
+              {faq.answer}
+            </p>
           </div>
         ))}
       </div>
     </GuideSection>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  list: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-  },
-  item: {
-    padding: 14,
-    borderRadius: 14,
-    border: "1px solid #e2e8f0",
-    background: "#ffffff",
-  },
-  question: {
-    fontWeight: 900,
-    color: "#0f172a",
-    marginBottom: 8,
-  },
-  answer: {
-    fontSize: 14,
-    lineHeight: 1.7,
-    color: "#475569",
-  },
-};

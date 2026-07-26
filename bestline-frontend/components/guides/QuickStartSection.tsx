@@ -1,5 +1,5 @@
+import GuideSection from "@/components/guides/GuideSection";
 import { quickStartItems } from "@/data/guidesContent";
-import GuideSection from "./GuideSection";
 
 export default function QuickStartSection() {
   return (
@@ -7,38 +7,19 @@ export default function QuickStartSection() {
       title="How to Use BestLinePicker"
       description="A quick walkthrough of how the app features connect to betting terminology."
     >
-      <div style={styles.grid}>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {quickStartItems.map((item) => (
-          <div key={item.id} style={styles.itemCard}>
-            <div style={styles.itemTitle}>{item.title}</div>
-            <div style={styles.itemDescription}>{item.description}</div>
+          <div
+            key={item.id}
+            className="rounded-2xl border border-border bg-muted/40 p-4"
+          >
+            <h3 className="font-black text-foreground">{item.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {item.description}
+            </p>
           </div>
         ))}
       </div>
     </GuideSection>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-    gap: 12,
-  },
-  itemCard: {
-    border: "1px solid #e2e8f0",
-    borderRadius: 16,
-    padding: 14,
-    background: "#ffffff",
-  },
-  itemTitle: {
-    fontWeight: 900,
-    color: "#0f172a",
-    marginBottom: 8,
-  },
-  itemDescription: {
-    fontSize: 14,
-    lineHeight: 1.65,
-    color: "#475569",
-  },
-};

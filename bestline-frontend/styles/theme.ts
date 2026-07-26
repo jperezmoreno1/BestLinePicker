@@ -9,9 +9,9 @@ export const theme = {
   brandWrap: "flex items-center gap-3",
 
   logoDot:
-    "flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm",
+    "flex h-9 w-9 items-center justify-center rounded-xl bg-[#6b7652] text-[#fffaf2] shadow-sm",
 
-  brandTitle: "text-lg font-black tracking-tight text-primary",
+  brandTitle: "text-lg font-black tracking-tight text-[#6b7652]",
 
   brandSubtitle: "mt-0.5 text-xs font-medium text-muted-foreground",
 
@@ -37,16 +37,16 @@ export const theme = {
   labelDark: "mb-1.5 block text-xs font-extrabold text-muted-foreground",
 
   selectDark:
-    "rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20",
+    "rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-[#6b7652] focus:ring-2 focus:ring-[#6b7652]/20",
 
   selectLight:
-    "w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20",
+    "w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-[#6b7652] focus:ring-2 focus:ring-[#6b7652]/20",
 
   inputLight:
-    "w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20",
+    "w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-[#6b7652] focus:ring-2 focus:ring-[#6b7652]/20",
 
   buttonPrimary:
-    "rounded-xl border border-primary bg-primary px-4 py-2 text-sm font-extrabold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60",
+    "rounded-xl border border-[#6b7652] bg-[#6b7652] px-4 py-2 text-sm font-extrabold text-[#fffaf2] shadow-sm transition hover:bg-[#5c6745] disabled:cursor-not-allowed disabled:opacity-60",
 
   buttonSecondary:
     "rounded-xl border border-border bg-muted px-4 py-2 text-sm font-bold text-foreground transition hover:bg-secondary/40",
@@ -55,7 +55,7 @@ export const theme = {
     "inline-flex items-center rounded-xl px-3 py-2 text-sm font-bold text-foreground transition hover:bg-muted",
 
   navLinkActive:
-    "bg-primary text-primary-foreground hover:bg-primary",
+    "bg-[#6b7652] text-[#fffaf2] hover:bg-[#5c6745]",
 
   navBrandLink:
     "flex items-center gap-3 no-underline transition hover:opacity-85",
@@ -66,7 +66,7 @@ export const theme = {
     "inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition hover:bg-muted",
 
   iconNavLinkActive:
-    "bg-primary text-primary-foreground hover:bg-primary",
+    "bg-[#6b7652] text-[#fffaf2] hover:bg-[#5c6745]",
 
   metaPill:
     "rounded-full border border-border bg-muted px-3 py-2 text-xs font-bold text-muted-foreground",
@@ -93,7 +93,7 @@ export const theme = {
   tab:
     "rounded-full border border-border bg-card px-4 py-2 text-sm font-extrabold text-foreground transition hover:bg-muted",
 
-  tabActive: "border-primary bg-primary text-primary-foreground",
+  tabActive: "border-[#6b7652] bg-[#6b7652] text-[#fffaf2]",
 
   tableWrap: "mt-3 overflow-x-auto",
 
@@ -117,7 +117,7 @@ export const theme = {
 
   odds: "font-black text-foreground",
 
-  oddsBest: "font-black text-primary",
+  oddsBest: "font-black text-[#6b7652]",
 
   bestPill:
     "rounded-full border border-best-line bg-best-line px-2 py-1 text-[11px] font-black text-best-line-foreground",
@@ -147,7 +147,7 @@ export const theme = {
     "mt-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm font-extrabold text-destructive",
 
   loadingBox:
-    "mt-3 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm font-extrabold text-primary",
+    "mt-3 rounded-xl border border-[#6b7652]/30 bg-[#6b7652]/10 p-3 text-sm font-extrabold text-[#6b7652]",
 
   emptyState:
     "mt-3 rounded-2xl border border-border bg-muted/50 p-4 text-sm text-muted-foreground",
@@ -162,13 +162,13 @@ export const theme = {
   snapshotSub: "mt-1 text-sm text-muted-foreground",
 
   snapshotBest:
-    "rounded-full border border-best-line bg-best-line/10 px-3 py-2 text-xs font-black text-primary",
+    "rounded-full border border-best-line bg-best-line/10 px-3 py-2 text-xs font-black text-[#6b7652]",
 
   trackingHero:
-    "mb-6 flex flex-col justify-between gap-4 rounded-3xl border border-border bg-card p-6 shadow-sm md:flex-row md:items-end",
+    "mb-5 flex flex-col justify-between gap-4 rounded-3xl border border-border bg-card p-6 shadow-sm md:flex-row md:items-end",
 
   trackingEyebrow:
-    "text-xs font-black uppercase tracking-[0.2em] text-primary",
+    "mt-4 text-xs font-black uppercase tracking-[0.2em] text-[#6b7652]",
 
   trackingTitle:
     "mt-2 text-3xl font-black tracking-tight text-foreground md:text-4xl",
@@ -189,7 +189,7 @@ export const theme = {
   trackingSub: "mt-1 text-sm font-bold text-muted-foreground",
 
   trackingStatus:
-    "w-fit rounded-full border border-best-line bg-best-line/10 px-3 py-2 text-xs font-black text-primary",
+    "w-fit rounded-full border border-best-line bg-best-line/10 px-3 py-2 text-xs font-black text-[#6b7652]",
 
   trackingStatGrid: "mt-4 grid gap-3 md:grid-cols-4",
 

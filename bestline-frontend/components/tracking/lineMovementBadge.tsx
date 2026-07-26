@@ -5,11 +5,11 @@ type LineMovementBadgeProps = {
 };
 
 const statusStyles: Record<LineMovementStatus, string> = {
-  improved: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  worse: "border-red-200 bg-red-50 text-red-700",
-  line_changed: "border-amber-200 bg-amber-50 text-amber-800",
-  unchanged: "border-stone-200 bg-stone-50 text-stone-700",
-  unavailable: "border-slate-200 bg-slate-50 text-slate-600",
+  improved: "border-best-line bg-best-line/10 text-[#6b7652]",
+  worse: "border-destructive/30 bg-destructive/10 text-destructive",
+  line_changed: "border-accent/30 bg-accent/10 text-accent",
+  unchanged: "border-border bg-muted text-muted-foreground",
+  unavailable: "border-border bg-muted/50 text-muted-foreground",
 };
 
 const statusLabels: Record<LineMovementStatus, string> = {

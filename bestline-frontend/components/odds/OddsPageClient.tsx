@@ -36,10 +36,37 @@ import {
   profitForStake,
   toGame,
 } from "@/utils/odds";
+import { normalize } from "path";
+import { Underdog } from "next/font/google";
 
 type OddsPageClientProps = {
   initialLeague: League;
 };
+
+const AUTO_REFRESH_STORAGE_KEY = "bestlinepicker:auto-refresh-enabled";
+const REFRESH_SECONDS_STORAGE_KEY = "bestlinepicker:refresh-seconds";
+
+const readSessionBoolean = (key: string, fallback: boolean) => {
+  if (typeof window === "undefined") return fallback;
+
+  const savedValue = window.sessionStorage.getItem(key);
+  if (savedValue === null) return fallback;
+
+  return savedValue === "true";
+}
+
+const readSessionNumber = (key: string, fallback: number) => {
+  if (typeof window === "undefined") return fallback;
+
+  const savedValue = window.sessionStorage.getItem(key);
+  const parsedValue = savedValue ? Number(savedValue) : Number.NaN;
+
+  return Number.isFinite(parsedValue) && parsedValue >= 5
+    ? parsedValue
+    : fallback;
+};
+
+const normalizeSearchText = (value: string | null | undefined) => (value || "").toLowerCase().trim();
 
 export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
   const [region, setRegion] = useState("us");
@@ -68,8 +95,12 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
   const [books, setBooks] = useState<Book[]>([]);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
 
-  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
-  const [refreshSeconds, setRefreshSeconds] = useState<number>(30);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(() =>
+    readSessionBoolean(AUTO_REFRESH_STORAGE_KEY, true)
+  );
+  const [refreshSeconds, setRefreshSeconds] = useState<number>(() =>
+    readSessionNumber(REFRESH_SECONDS_STORAGE_KEY, 30)
+  );
 
   const [stake, setStake] = useState<number>(100);
   const [selectedSelectionKey, setSelectedSelectionKey] = useState<string>(
@@ -91,12 +122,35 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
   }, [displayEvents, league]);
 
   const filteredGames = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = normalizeSearchText(search);
 
-    return games.filter((game) =>
-      query ? `${game.away} ${game.home}`.toLowerCase().includes(query) : true
-    );
-  }, [games, search]);
+    if (!query) return games;
+
+    return games.filter((game) => {
+      const matchingEvents = displayEvents.filter(
+        (event) => getMatchupKey(event) === game.matchupKey
+      );
+
+      const bookmakerText = matchingEvents
+        .flatMap((event) => event.bookmakers || [])
+        .map((bookmaker) => `${bookmaker.key} ${bookmaker.title}`)
+        .join(" ");
+
+      const searchableText = normalizeSearchText(
+        [
+          game.away,
+          game.home,
+          `${game.away} @ ${game.home}`,
+          `${game.home} vs ${game.away}`,
+          game.league,
+          game.eventStatus,
+          bookmakerText,
+        ].join(" ")
+      );
+
+      return searchableText.includes(query);
+    });
+  }, [displayEvents, games, search]);
 
   const selectedDisplayEvent = useMemo(() => {
     return (
@@ -381,6 +435,33 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDisplayEvent?.id, market]);
 
+  useEffect(() => {
+    const query = normalizeSearchText(search);
+    if (!query) return;
+
+    const selectedGameStillVisible = filteredGames.some(
+      (game) => game.matchupKey === selectedMatchupKey
+    );
+
+    if (!selectedGameStillVisible) {
+      setSelectedMatchupKey(filteredGames[0]?.matchupKey || "");
+    }
+  }, [filteredGames, search, selectedMatchupKey]);
+
+  useEffect(() => {
+    window.sessionStorage.setItem(
+      AUTO_REFRESH_STORAGE_KEY,
+      String(autoRefreshEnabled)
+    );
+  }, [autoRefreshEnabled]);
+
+  useEffect(() => {
+    window.sessionStorage.setItem(
+      REFRESH_SECONDS_STORAGE_KEY,
+      String(refreshSeconds)
+    );
+  }, [refreshSeconds]);
+
   return (
   <main className={theme.page}>
     <AppHeader
@@ -388,6 +469,9 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
       savingSnapshot={savingSnapshot}
       onRefresh={refreshOdds}
       onSaveSnapshot={saveSnapshot}
+      searchValue={search}
+      onSearchChange={setSearch}
+      searchPlaceholder={`Search ${league} teams, matchups, books, or events...`}
     />
 
     <div className={theme.container}>
@@ -408,6 +492,7 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
             </p>
           </div>
 
+        <div className="flex flex-col gap-2 sm:items-end">
           <span className={theme.metaPill}>
             Last updated{" "}
             <strong>
@@ -417,6 +502,33 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
               })}
             </strong>
           </span>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAutoRefreshEnabled((currentValue) => !currentValue)}
+              className={autoRefreshEnabled ? theme.buttonPrimary : theme.buttonSecondary}
+              >
+                Auto-refresh {autoRefreshEnabled ? "On" : "Off"}
+              </button>
+
+            <label className="flex items-center gap-2 rounded-xl border border-border bg-muted px-3 py-2 text-xs font-black text-muted-foreground">
+                Every
+                <input
+                  type="number"
+                  min={5}
+                  step={5}
+                  value={refreshSeconds}
+                  onChange={(event) =>
+                    setRefreshSeconds(Math.max(5, Number(event.target.value)))
+                  }
+                  className="w-16 rounded-lg border border-border bg-card px-2 py-1 text-sm font-bold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                sec
+            </label>
+          </div>
+        </div>
+          
         </div>
       </section>
 
@@ -425,6 +537,11 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
           games={filteredGames}
           selectedMatchupKey={selectedMatchupKey}
           onSelectGame={setSelectedMatchupKey}
+          emptyMessage={
+            search.trim()
+              ? `No ${league} games match "${search.trim()}". Try a team, matchup, league, or sportsbooks name.`
+              : undefined
+          }
         />
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[1.3fr_1fr]">

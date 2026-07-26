@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname} from "next/navigation";
 import {
   Calculator,
   Heart,
@@ -21,6 +21,9 @@ type AppHeaderProps = {
   savingSnapshot?: boolean;
   onRefresh?: () => void;
   onSaveSnapshot?: () => void;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
 };
 
 const SPORTS_LINKS: Array<{
@@ -83,27 +86,39 @@ export default function AppHeader({
   savingSnapshot = false,
   onRefresh,
   onSaveSnapshot,
+  searchValue,
+  onSearchChange,
+  searchPlaceholder = "Search teams, leagues, books, or events..."
 }: AppHeaderProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
+
+  const controlledSearch = typeof onSearchChange === "function";
+  const visibleSearchValue = controlledSearch
+    ? searchValue ?? ""
+    : localSearchQuery;
 
   const isActivePath = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
-  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+  }
 
-    const query = searchQuery.trim();
+  const handleSearchChange = (value: string) => {
+    if (controlledSearch) {
+      onSearchChange(value);
+      return;
+    }
 
-    if (!query) return;
+    setLocalSearchQuery(value);
+  };
 
-    router.push(`/search?q${encodeURIComponent(query)}`);
-    setSearchOpen(false);
-    setSearchQuery("");
+  const clearSearch = () => {
+    handleSearchChange("");
   };
 
   return (
@@ -213,15 +228,27 @@ export default function AppHeader({
           </div>
         </div>
         {searchOpen && (
-          <form onSubmit={handleSearch} className="mt-4">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search teams, leagues, or events..."
-              className="w-full rounded-xl border border-border bg-background px-4 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
-              autoFocus
-            />
+          <form onSubmit={handleSearchSubmit} className="mt-4">
+            <div className="flex gap-2">
+              <input
+                type="search"
+                value={visibleSearchValue}
+                onChange={(event) => handleSearchChange(event.target.value)}
+                placeholder={searchPlaceholder}
+                className="w-full rounded-xl border border-border bg-background px-4 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+                autoFocus
+              />
+
+              {visibleSearchValue && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className={theme.buttonSecondary}
+                  >
+                    Clear
+                  </button>
+              )}
+            </div>
           </form>
         )}
         <nav className="mt-4 flex items-center gap-1 overflow-x-auto pb-2 md:hidden">
