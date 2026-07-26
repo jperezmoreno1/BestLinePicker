@@ -21,12 +21,12 @@ export default function TrackingList({
 }: TrackingListProps) {
   if (trackedLines.length === 0) {
     return (
-      <section className="rounded-3xl border border-stone-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-xl font-black text-stone-950">
+      <section className="rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
+        <h2 className="text-xl font-black text-foreground">
           No tracked lines yet
         </h2>
 
-        <p className="mt-2 text-sm font-medium text-stone-600">
+        <p className="mt-2 text-sm font-medium text-muted-foreground">
           Go to the odds page, choose a game, and click Track on any sportsbook
           line.
         </p>

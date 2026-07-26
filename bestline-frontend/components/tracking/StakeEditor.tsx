@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { theme } from "@/styles/theme";
 
 type StakeEditorProps = {
   initialStake: number;
@@ -30,14 +31,14 @@ export default function StakeEditor({ initialStake, onSave }: StakeEditorProps) 
         min={1}
         value={stake}
         onChange={(event) => setStake(Number(event.target.value))}
-        className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none"
+        className="w-24 rounded-xl border border-border bg-card px-3 py-2 text-sm font-bold text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
       />
 
       <button
         type="button"
         onClick={handleSave}
         disabled={saving || stake <= 0}
-        className="rounded-xl bg-slate-950 px-3 py-2 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className={theme.buttonPrimary}
       >
         {saving ? "Saving..." : "Update"}
       </button>

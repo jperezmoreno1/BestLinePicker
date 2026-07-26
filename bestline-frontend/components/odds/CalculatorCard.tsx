@@ -61,7 +61,7 @@ export default function CalculatorCard({
           step={1}
           value={stake}
           onChange={(event) => onStakeChange(Number(event.target.value))}
-          className="w-32 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
+          className="w-32 rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
@@ -92,13 +92,13 @@ export default function CalculatorCard({
                 className={isBest ? theme.calcCardBest : theme.calcCard}
               >
                 <div className="mb-2 flex items-baseline justify-between gap-2">
-                  <div className="font-black text-slate-900">{book.name}</div>
+                  <div className="font-black text-foreground">{book.name}</div>
 
                   <div
                     className={
                       isBest
-                        ? "font-black text-indigo-800"
-                        : "font-black text-slate-900"
+                        ? "font-black text-primary"
+                        : "font-black text-foreground"
                     }
                   >
                     {formatOdds(outcome.oddsAmerican)}
@@ -128,7 +128,7 @@ export default function CalculatorCard({
                     </span>
                   </div>
                 ) : (
-                  <div className="mt-2 text-xs font-extrabold text-indigo-800">
+                  <div className="mt-2 text-xs font-extrabold text-primary">
                     Best price for this selection
                   </div>
                 )}

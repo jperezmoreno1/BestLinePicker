@@ -27,7 +27,7 @@
   --destructive: #c85a50;
   --destructive-foreground: #ffffff;
 
-  --boder: rgba(107, 118, 82, 0.15);
+  --border: rgba(107, 118, 82, 0.15);
   --input: transparent;
   --input-background: #ffffff;
   --switch-background: #c4a589;
@@ -84,7 +84,7 @@
 
 * {
   box-sizing: border-box;
-  border-color: var(--boder);
+  border-color: var(--border);
 }
 
 html {
