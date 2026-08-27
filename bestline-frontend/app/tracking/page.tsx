@@ -7,12 +7,14 @@ import { ArrowLeft, Heart } from "lucide-react";
 import PageShell from "@/components/layout/PageShell";
 
 import TrackingList from "@/components/tracking/TrackingList";
+import AuthGate from "@/components/auth/AuthGate";
+import { useAuth } from "@/components/auth/AuthProvider";
 import type { TrackedLine } from "@/types/tracking";
 import {
-  deleteTrackedLine,
   getTrackedLines,
+  removeTrackedLine,
   updateTrackedLineStake,
-} from "@/lib/trackingApi";
+} from "@/lib/firestore/trackedLines";
 import { theme } from "@/styles/theme";
 import {
   compareTrackedLineToCurrentOffer,
@@ -61,6 +63,9 @@ function getOddsEventsFromResponse(json: unknown): OddsEvent[] {
 }
 
 export default function TrackingPage() {
+  const { user } = useAuth();
+  const uid = user?.emailVerified ? user.uid : null;
+
   const [trackedLines, setTrackedLines] = useState<TrackedLine[]>([]);
   const [currentEvents, setCurrentEvents] = useState<OddsEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,12 +133,12 @@ export default function TrackingPage() {
     }
   };
 
-  const loadTrackedLines = async () => {
+  const loadTrackedLines = async (currentUid: string) => {
     setLoading(true);
     setError("");
 
     try {
-      const data = await getTrackedLines();
+      const data = await getTrackedLines(currentUid);
       setTrackedLines(data);
       await loadCurrentOddsForTrackedLines(data);
     } catch (error) {
@@ -158,10 +163,11 @@ export default function TrackingPage() {
   }, [trackedLines, currentEvents]);
 
   const handleDelete = async (id: string) => {
+    if (!uid) return;
     setError("");
 
     try {
-      await deleteTrackedLine(id);
+      await removeTrackedLine(uid, id);
       setTrackedLines((current) => current.filter((item) => item.id !== id));
     } catch (error) {
       setError(
@@ -171,10 +177,11 @@ export default function TrackingPage() {
   };
 
   const handleUpdateStake = async (id: string, stake: number) => {
+    if (!uid) return;
     setError("");
 
     try {
-      const updatedLine = await updateTrackedLineStake(id, stake);
+      const updatedLine = await updateTrackedLineStake(uid, id, stake);
 
       setTrackedLines((current) =>
         current.map((item) => (item.id === id ? updatedLine : item))
@@ -187,8 +194,16 @@ export default function TrackingPage() {
   };
 
   useEffect(() => {
-    loadTrackedLines();
-  }, []);
+    if (!uid) {
+      setTrackedLines([]);
+      setCurrentEvents([]);
+      setLoading(false);
+      return;
+    }
+
+    loadTrackedLines(uid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid]);
 
   return (
   <PageShell>
@@ -225,17 +240,22 @@ export default function TrackingPage() {
       </div>
     </div>
 
-    {error && <div className={theme.errorBox}>{error}</div>}
+    <AuthGate
+      title="Sign in to track lines"
+      description="Sign in and verify your email to save and manage tracked lines. Anyone can browse odds, but tracked lines are private to your account."
+    >
+      {error && <div className={theme.errorBox}>{error}</div>}
 
-    {loading ? (
-      <div className={theme.loadingBox}>Loading tracked lines...</div>
-    ) : (
-      <TrackingList
-        trackedLines={trackedLinesWithComparison}
-        onDelete={handleDelete}
-        onUpdateStake={handleUpdateStake}
-      />
-    )}
+      {loading ? (
+        <div className={theme.loadingBox}>Loading tracked lines...</div>
+      ) : (
+        <TrackingList
+          trackedLines={trackedLinesWithComparison}
+          onDelete={handleDelete}
+          onUpdateStake={handleUpdateStake}
+        />
+      )}
+    </AuthGate>
   </PageShell>
 );
 }

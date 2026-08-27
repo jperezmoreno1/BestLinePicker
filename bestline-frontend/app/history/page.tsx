@@ -5,30 +5,33 @@ import Link from "next/link";
 import { ArrowLeft, Clock } from "lucide-react";
 import PageShell from "@/components/layout/PageShell";
 import SnapshotHistoryCard from "@/components/snapshots/SnapshotHistoryCard";
+import AuthGate from "@/components/auth/AuthGate";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { getSnapshots } from "@/lib/firestore/snapshots";
 import type { Snapshot } from "@/types/odds";
 
 export default function HistoryPage() {
+  const { user } = useAuth();
+  const uid = user?.emailVerified ? user.uid : null;
+
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [snapshotsLoading, setSnapshotsLoading] = useState(true);
   const [snapshotError, setSnapshotError] = useState("");
 
   useEffect(() => {
-    async function loadSnapshots() {
+    if (!uid) {
+      setSnapshots([]);
+      setSnapshotsLoading(false);
+      return;
+    }
+
+    async function loadSnapshots(currentUid: string) {
       try {
         setSnapshotsLoading(true);
         setSnapshotError("");
 
-        const res = await fetch("/api/snapshots?limit=25", {
-          cache: "no-store",
-        });
-
-        const json = await res.json();
-
-        if (!res.ok) {
-          throw new Error(json.error || "Failed to load snapshots");
-        }
-
-        setSnapshots(json.data || []);
+        const data = await getSnapshots(currentUid, { limitCount: 25 });
+        setSnapshots(data);
       } catch (error) {
         setSnapshotError(
           error instanceof Error ? error.message : "Failed to load snapshots"
@@ -38,8 +41,8 @@ export default function HistoryPage() {
       }
     }
 
-    loadSnapshots();
-  }, []);
+    loadSnapshots(uid);
+  }, [uid]);
 
   return (
     <PageShell>
@@ -74,12 +77,17 @@ export default function HistoryPage() {
         </div>
       </section>
 
-      <SnapshotHistoryCard
-        snapshots={snapshots}
-        snapshotsLoading={snapshotsLoading}
-        snapshotError={snapshotError}
-        mode="full"
-      />
+      <AuthGate
+        title="Sign in to view snapshot history"
+        description="Sign in and verify your email to see the odds snapshots saved to your account."
+      >
+        <SnapshotHistoryCard
+          snapshots={snapshots}
+          snapshotsLoading={snapshotsLoading}
+          snapshotError={snapshotError}
+          mode="full"
+        />
+      </AuthGate>
     </PageShell>
   );
 }

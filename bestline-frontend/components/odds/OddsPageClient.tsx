@@ -26,18 +26,19 @@ import {
 import {
   bestOddsForSelection,
   buildBooksFromDisplayEvent,
-  buildNormalizedOutcomesForSelection,
   getBestLineSummary,
   getInitialSelectionKey,
   getMatchupKey,
   getSelectionData,
-  impliedProb,
-  payoutForStake,
-  profitForStake,
   toGame,
 } from "@/utils/odds";
-import { normalize } from "path";
-import { Underdog } from "next/font/google";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useRequireVerifiedUser } from "@/lib/auth/useRequireVerifiedUser";
+import {
+  getSnapshots,
+  saveSnapshot as saveSnapshotDocument,
+  type NewSnapshotInput,
+} from "@/lib/firestore/snapshots";
 
 type OddsPageClientProps = {
   initialLeague: League;
@@ -85,7 +86,11 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const { user } = useAuth();
+  const { requireVerifiedUid } = useRequireVerifiedUser();
+  const uid = user?.emailVerified ? user.uid : null;
+
+  const [allSnapshots, setAllSnapshots] = useState<Snapshot[]>([]);
   const [snapshotsLoading, setSnapshotsLoading] = useState<boolean>(false);
   const [snapshotError, setSnapshotError] = useState<string>("");
   const [savingSnapshot, setSavingSnapshot] = useState<boolean>(false);
@@ -183,6 +188,18 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
     return bestOddsForSelection(books, selectedSelectionKey);
   }, [books, selectedSelectionKey]);
 
+  const recentSnapshots = useMemo(() => {
+    if (!selectedDisplayEvent) return [];
+
+    const marketKey = MARKET_TO_KEY[market];
+
+    return allSnapshots.filter(
+      (snapshot) =>
+        snapshot.event_id === selectedDisplayEvent.id &&
+        snapshot.market_key === marketKey
+    );
+  }, [allSnapshots, selectedDisplayEvent, market]);
+
   const refreshOdds = async () => {
     setLoading(true);
     setError("");
@@ -241,6 +258,9 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
   };
 
   const saveSnapshot = async () => {
+    const activeUid = requireVerifiedUid();
+    if (!activeUid) return;
+
     if (!selectedDisplayEvent) {
       setSnapshotError("Select a game before saving a snapshot.");
       return;
@@ -262,107 +282,28 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
     setSnapshotError("");
 
     try {
-      const normalizedOutcomes = buildNormalizedOutcomesForSelection(
-        books,
-        selectedSelectionKey
-      );
-
       const bestLineSummary = getBestLineSummary(books, selectedSelectionKey);
-      const bestPrice = bestLineSummary.price;
 
-      const payload = {
+      const snapshotInput: NewSnapshotInput = {
         sport: LEAGUE_TO_SPORT[league],
-        sport_key: selectedDisplayEvent.sport_key,
-        sport_title: selectedDisplayEvent.sport_title,
         event_id: selectedDisplayEvent.id,
-        event_commence_time: selectedDisplayEvent.commence_time,
-        home_team: selectedDisplayEvent.home_team,
-        away_team: selectedDisplayEvent.away_team,
+        matchup_label: `${selectedDisplayEvent.away_team} @ ${selectedDisplayEvent.home_team}`,
         market_key: MARKET_TO_KEY[market],
-        selection_name: selectionData.selectionName,
-        selection_type: selectionData.selectionType,
-        point: selectionData.point,
-        best_line_summary: bestLineSummary,
-        calculator_context: {
-          stake,
-          payout: bestPrice !== null ? payoutForStake(bestPrice, stake) : null,
-          profit: bestPrice !== null ? profitForStake(bestPrice, stake) : null,
-          implied_probability:
-            bestPrice !== null ? impliedProb(bestPrice) : null,
-        },
-        filters: {
-          regions: [region],
-          bookmakers: selectedBooks,
-          odds_format: "american",
-          books_mode: booksMode,
-          event_status: eventStatus,
-          sort_by: sortBy,
-          sort_order: sortOrder,
-        },
-        normalized_outcomes: normalizedOutcomes,
-        source: "the_odds_api",
+        market_label: market,
+        selection_key: selectedSelectionKey,
+        selection_label: selectionData.label,
+        best_bookmaker_title: bestLineSummary.bookmaker_title,
+        best_price: bestLineSummary.price,
       };
 
-      const res = await fetch("/api/snapshots", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        throw new Error(json.error || "Failed to save snapshot");
-      }
-
-      if (json.data) {
-        setSnapshots((prev) => [json.data, ...prev].slice(0, 25));
-      }
+      const saved = await saveSnapshotDocument(activeUid, snapshotInput);
+      setAllSnapshots((prev) => [saved, ...prev]);
     } catch (error) {
       setSnapshotError(
         error instanceof Error ? error.message : "Failed to save snapshot"
       );
     } finally {
       setSavingSnapshot(false);
-    }
-  };
-
-  const loadSnapshots = async () => {
-    if (!selectedDisplayEvent?.id) {
-      setSnapshots([]);
-      return;
-    }
-
-    setSnapshotsLoading(true);
-    setSnapshotError("");
-
-    try {
-      const params = new URLSearchParams({
-        event_id: selectedDisplayEvent.id,
-        market_key: MARKET_TO_KEY[market],
-        limit: "10",
-      });
-
-      const res = await fetch(`/api/snapshots?${params.toString()}`, {
-        cache: "no-store",
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        throw new Error(json.error || "Failed to load snapshots");
-      }
-
-      setSnapshots(json.data || []);
-    } catch (error) {
-      setSnapshotError(
-        error instanceof Error ? error.message : "Failed to load snapshots"
-      );
-      setSnapshots([]);
-    } finally {
-      setSnapshotsLoading(false);
     }
   };
 
@@ -431,9 +372,39 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
   }, [selectionOptions, selectedSelectionKey]);
 
   useEffect(() => {
-    loadSnapshots();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDisplayEvent?.id, market]);
+    if (!uid) {
+      setAllSnapshots([]);
+      setSnapshotError("");
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadSnapshots(currentUid: string) {
+      setSnapshotsLoading(true);
+      setSnapshotError("");
+
+      try {
+        const data = await getSnapshots(currentUid);
+        if (!cancelled) setAllSnapshots(data);
+      } catch (error) {
+        if (!cancelled) {
+          setSnapshotError(
+            error instanceof Error ? error.message : "Failed to load snapshots"
+          );
+          setAllSnapshots([]);
+        }
+      } finally {
+        if (!cancelled) setSnapshotsLoading(false);
+      }
+    }
+
+    loadSnapshots(uid);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [uid]);
 
   useEffect(() => {
     const query = normalizeSearchText(search);
@@ -568,7 +539,7 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
         </div>
 
         <SnapshotHistoryCard
-          snapshots={snapshots}
+          snapshots={recentSnapshots}
           snapshotsLoading={snapshotsLoading}
           snapshotError={snapshotError}
           mode="recent"

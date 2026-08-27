@@ -15,6 +15,9 @@ import {
 import { FormEvent, useState } from "react";
 import { theme } from "@/styles/theme";
 import type { League } from "@/types/odds";
+import { useAuth } from "@/components/auth/AuthProvider";
+import SignInButton from "@/components/auth/SignInButton";
+import UserMenu from "@/components/auth/UserMenu";
 
 type AppHeaderProps = {
   activeLeague?: League;
@@ -91,6 +94,7 @@ export default function AppHeader({
   searchPlaceholder = "Search teams, leagues, books, or events..."
 }: AppHeaderProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState("");
 
@@ -225,6 +229,7 @@ export default function AppHeader({
                 {savingSnapshot ? "Saving..." : "Save Snapshot"}
               </button>
             )}
+            <div className="ml-2">{user ? <UserMenu /> : <SignInButton />}</div>
           </div>
         </div>
         {searchOpen && (
@@ -279,29 +284,28 @@ export default function AppHeader({
             );
           })}
         </nav>
-        {(onRefresh || onSaveSnapshot) && (
-          <div className="mt-3 flex gap-2 lg:hidden">
-            {onRefresh && (
-              <button
-                type="button"
-                onClick={onRefresh}
-                className={theme.buttonSecondary}
-              >
-                Refresh
-              </button>
-            )}
-            {onSaveSnapshot && (
-              <button
-                type="button"
-                onClick={onSaveSnapshot}
-                disabled={savingSnapshot}
-                className={theme.buttonPrimary}
-              >
-                {savingSnapshot ? "Saving..." : "Save Snapshot"}
-              </button>
-            )}
-          </div>
-        )}
+        <div className="mt-3 flex flex-wrap items-center gap-2 lg:hidden">
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              className={theme.buttonSecondary}
+            >
+              Refresh
+            </button>
+          )}
+          {onSaveSnapshot && (
+            <button
+              type="button"
+              onClick={onSaveSnapshot}
+              disabled={savingSnapshot}
+              className={theme.buttonPrimary}
+            >
+              {savingSnapshot ? "Saving..." : "Save Snapshot"}
+            </button>
+          )}
+          {user ? <UserMenu /> : <SignInButton />}
+        </div>
       </div>
     </header>
   );
