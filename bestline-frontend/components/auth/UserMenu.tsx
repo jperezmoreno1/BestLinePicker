@@ -24,7 +24,7 @@ export default function UserMenu() {
 
   if (!user) return null;
 
-  const label = user.displayName || user.email || "Account";
+  const label = user.displayName?.split(" ")[0] || user.email?.split("@")[0] || "Account";
   const initial = label.trim().charAt(0).toUpperCase();
 
   return (
@@ -35,7 +35,6 @@ export default function UserMenu() {
         className="flex items-center gap-2 rounded-xl border border-border bg-muted px-2 py-1.5 transition hover:bg-secondary/40"
       >
         {user.photoURL ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={user.photoURL}
             alt=""

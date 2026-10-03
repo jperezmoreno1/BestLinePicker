@@ -100,12 +100,13 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
   const [books, setBooks] = useState<Book[]>([]);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
 
-  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(() =>
-    readSessionBoolean(AUTO_REFRESH_STORAGE_KEY, true)
-  );
-  const [refreshSeconds, setRefreshSeconds] = useState<number>(() =>
-    readSessionNumber(REFRESH_SECONDS_STORAGE_KEY, 30)
-  );
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [refreshSeconds, setRefreshSeconds] = useState<number>(30)
+
+  useEffect(() => {
+    setAutoRefreshEnabled(readSessionBoolean(AUTO_REFRESH_STORAGE_KEY, true));
+    setRefreshSeconds(readSessionNumber(REFRESH_SECONDS_STORAGE_KEY, 30));
+  }, []);
 
   const [stake, setStake] = useState<number>(100);
   const [selectedSelectionKey, setSelectedSelectionKey] = useState<string>(
@@ -419,20 +420,6 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
     }
   }, [filteredGames, search, selectedMatchupKey]);
 
-  useEffect(() => {
-    window.sessionStorage.setItem(
-      AUTO_REFRESH_STORAGE_KEY,
-      String(autoRefreshEnabled)
-    );
-  }, [autoRefreshEnabled]);
-
-  useEffect(() => {
-    window.sessionStorage.setItem(
-      REFRESH_SECONDS_STORAGE_KEY,
-      String(refreshSeconds)
-    );
-  }, [refreshSeconds]);
-
   return (
   <main className={theme.page}>
     <AppHeader
@@ -477,11 +464,15 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => setAutoRefreshEnabled((currentValue) => !currentValue)}
+              onClick={() => {
+                const next = !autoRefreshEnabled;
+                setAutoRefreshEnabled(next);
+                window.sessionStorage.setItem(AUTO_REFRESH_STORAGE_KEY, String(next));
+              }}
               className={autoRefreshEnabled ? theme.buttonPrimary : theme.buttonSecondary}
               >
-                Auto-refresh {autoRefreshEnabled ? "On" : "Off"}
-              </button>
+              Auto-refresh {autoRefreshEnabled ? "On" : "Off"}
+            </button>
 
             <label className="flex items-center gap-2 rounded-xl border border-border bg-muted px-3 py-2 text-xs font-black text-muted-foreground">
                 Every
@@ -490,9 +481,11 @@ export default function OddsPageClient({ initialLeague }: OddsPageClientProps) {
                   min={5}
                   step={5}
                   value={refreshSeconds}
-                  onChange={(event) =>
-                    setRefreshSeconds(Math.max(5, Number(event.target.value)))
-                  }
+                  onChange={(event) => {
+                    const next = Math.max(5, Number(event.target.value));
+                    setRefreshSeconds(next);
+                    window.sessionStorage.setItem(REFRESH_SECONDS_STORAGE_KEY, String(next));
+                  }}
                   className="w-16 rounded-lg border border-border bg-card px-2 py-1 text-sm font-bold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
                 sec
