@@ -19,7 +19,7 @@ SECRET_KEY = 'django-insecure-xdtb(kizl5a75og3!ihag*(j4m)k-g#@_4dpkc9mcc!$4^(35f
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "bestlinepicker.onrender.com"]
 
 
 # Application definition
