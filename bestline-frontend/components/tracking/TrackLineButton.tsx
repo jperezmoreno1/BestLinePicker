@@ -2,23 +2,28 @@
 
 import { useState } from "react";
 import type { TrackLinePayload } from "@/types/tracking";
-import { saveTrackedLine } from "@/lib/trackingApi";
+import { trackLine } from "@/lib/firestore/trackedLines";
+import { useRequireVerifiedUser } from "@/lib/auth/useRequireVerifiedUser";
 
 type TrackLineButtonProps = {
   line: TrackLinePayload;
 };
 
 export default function TrackLineButton({ line }: TrackLineButtonProps) {
+  const { requireVerifiedUid } = useRequireVerifiedUser();
   const [saving, setSaving] = useState(false);
   const [tracked, setTracked] = useState(false);
   const [error, setError] = useState("");
 
   const handleTrack = async () => {
+    const uid = requireVerifiedUid();
+    if (!uid) return;
+
     setSaving(true);
     setError("");
 
     try {
-      await saveTrackedLine({
+      await trackLine(uid, {
         ...line,
         status: line.status || "watching",
       });

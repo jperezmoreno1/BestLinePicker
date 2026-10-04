@@ -15,6 +15,9 @@ import {
 import { FormEvent, useState } from "react";
 import { theme } from "@/styles/theme";
 import type { League } from "@/types/odds";
+import { useAuth } from "@/components/auth/AuthProvider";
+import SignInButton from "@/components/auth/SignInButton";
+import UserMenu from "@/components/auth/UserMenu";
 
 type AppHeaderProps = {
   activeLeague?: League;
@@ -91,6 +94,7 @@ export default function AppHeader({
   searchPlaceholder = "Search teams, leagues, books, or events..."
 }: AppHeaderProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState("");
 
@@ -137,7 +141,7 @@ export default function AppHeader({
                 </div>
               </div>
             </Link>
-            <nav className="hidden items-center gap-1 md:flex">
+            <nav className="hidden min-w-0 overflow-x-auto whitespace-nowrap items-center gap-1 md:flex">
               {SPORTS_LINKS.map((link) => {
                 const active =
                   activeLeague?.toLowerCase() === link.label.toLowerCase() ||
@@ -167,7 +171,7 @@ export default function AppHeader({
               })}
             </nav>
           </div>
-          <div className="flex flex-shrink-0 items-center gap-1">
+          <div className="flex flex-shrink-0 items-center gap-0">
             <button
               type="button"
               onClick={() => setSearchOpen((current) => !current)}
@@ -210,7 +214,7 @@ export default function AppHeader({
               <button
                 type="button"
                 onClick={onRefresh}
-                className="ml-2 hidden rounded-xl border border-border bg-muted px-3 py-2 text-sm font-bold text-foreground transition hover:bg-secondary/40 lg:inline-flex"
+                className="ml-2 hidden rounded-xl border border-border bg-muted px-3 py-2 text-sm font-bold text-foreground transition hover:bg-secondary/40 xl:inline-flex"
               >
                 Refresh
               </button>
@@ -220,11 +224,12 @@ export default function AppHeader({
                 type="button"
                 onClick={onSaveSnapshot}
                 disabled={savingSnapshot}
-                className="hidden rounded-xl border border-primary bg-primary px-3 py-2 text-sm font-extrabold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-60 lg:inline-flex"
+                className="ml-2 hidden rounded-xl border border-primary bg-primary px-3 py-2 text-sm font-extrabold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-60 xl:inline-flex"
               >
                 {savingSnapshot ? "Saving..." : "Save Snapshot"}
               </button>
             )}
+            <div className="ml-2">{user ? <UserMenu /> : <SignInButton />}</div>
           </div>
         </div>
         {searchOpen && (
@@ -279,29 +284,28 @@ export default function AppHeader({
             );
           })}
         </nav>
-        {(onRefresh || onSaveSnapshot) && (
-          <div className="mt-3 flex gap-2 lg:hidden">
-            {onRefresh && (
-              <button
-                type="button"
-                onClick={onRefresh}
-                className={theme.buttonSecondary}
-              >
-                Refresh
-              </button>
-            )}
-            {onSaveSnapshot && (
-              <button
-                type="button"
-                onClick={onSaveSnapshot}
-                disabled={savingSnapshot}
-                className={theme.buttonPrimary}
-              >
-                {savingSnapshot ? "Saving..." : "Save Snapshot"}
-              </button>
-            )}
-          </div>
-        )}
+        <div className="mt-3 flex flex-wrap items-center gap-2 lg:hidden">
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              className={theme.buttonSecondary}
+            >
+              Refresh
+            </button>
+          )}
+          {onSaveSnapshot && (
+            <button
+              type="button"
+              onClick={onSaveSnapshot}
+              disabled={savingSnapshot}
+              className={theme.buttonPrimary}
+            >
+              {savingSnapshot ? "Saving..." : "Save Snapshot"}
+            </button>
+          )}
+          {user ? <UserMenu /> : <SignInButton />}
+        </div>
       </div>
     </header>
   );
