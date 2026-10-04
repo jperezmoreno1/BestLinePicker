@@ -14,12 +14,21 @@ FIREBASE_SERVICE_ACCOUNT_PATH = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "")
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-xdtb(kizl5a75og3!ihag*(j4m)k-g#@_4dpkc9mcc!$4^(35f'
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
+
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise RuntimeError("DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is not True")
+    SECRET_KEY = "django-insecure-local-dev-only"
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "bestlinepicker.onrender.com"]
+
+# Render sets this to the service's real hostname (e.g. <name>.onrender.com)
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
 # Application definition
@@ -48,7 +57,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    'https://localhost:3000',
+    'http://localhost:3000',
 ]
 
 REST_FRAMEWORK = {
