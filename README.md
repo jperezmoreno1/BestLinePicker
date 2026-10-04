@@ -433,17 +433,6 @@ python manage.py runserver
 python manage.py migrate
 python manage.py test
 ```
-
-## Development Notes
-
-- Keep the frontend API/proxy routes intact. The frontend should call `/api/...` routes, and those routes should forward to Django.
-- Do not call The Odds API directly from client components.
-- Keep odds fetching, filtering, calculator, snapshot, and tracking logic separated into reusable components and services.
-- Avoid replacing live API-connected components with mock data.
-- Keep large page components split into smaller pieces under `components/`.
-- Use `sessionStorage` for settings that should persist only while the tab is open, such as temporary auto-refresh preferences.
-- Snapshots and tracked lines are written directly by the frontend to Firestore (`lib/firestore/snapshots.ts`, `lib/firestore/trackedLines.ts`) under `users/{uid}/...`, gated by `AuthGate` / `useRequireVerifiedUser`. Don't route these through the Django proxy routes again — that path is legacy and unscoped by user.
-
 ## Troubleshooting
 
 ### `ODDS_API_KEY MISSING IN .env FILE`
@@ -501,16 +490,3 @@ out-of-date ruleset, not a frontend bug, is the most common cause.
 
 The frontend should usually call the Next.js proxy routes, which then call Django. If calling Django directly during development, make sure the Django CORS settings include the frontend origin.
 
-## Planned Improvements
-
-- Improve dynamic search across currently loaded games
-- Add persistent tab-session auto-refresh toggle
-- Continue polishing guide page styling to match the rest of the app
-- Expand supported leagues
-- Improve tracked line movement alerts
-- Add more robust empty, loading, and error states
-- Continue splitting large components into smaller reusable components
-
-## Status
-
-BestLinePicker is currently a local development project with working frontend/backend integration, live odds fetching, backend caching, snapshot history, tracking, a redesigned card-based UI, and Firebase Authentication with per-user Firestore persistence for snapshots and tracked lines.
